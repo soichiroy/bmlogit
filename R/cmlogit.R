@@ -19,7 +19,7 @@ cmlogit <- function(Y, X, popY, popX, popN, control = list()) {
   n_item <- ncol(Y)
   n_var  <- ncol(X)
   dat_list <- list(Y = Y, X = X, popY = popY, popX = popX, popN = popN,
-                   n_item = n_item, n_var = n_var)
+                   n_item = n_item, n_var = n_var, ep = control$tol_pred)
 
   ## fit
   fit <- nloptr(
@@ -83,13 +83,14 @@ fn_ll_grad <- function(x, dat_list) {
 #' @param x A vector of parameters
 #' @keywords internal
 fn_ct <- function(x, dat_list) {
-  ep = 0.01
+
 
   ## obtain data
   popY <- dat_list$popY
   popX <- dat_list$popX
   popN <- dat_list$popN
   n_item <- dat_list$n_item
+  ep     <- dat_list$ep
 
   ##
   ## constraints:

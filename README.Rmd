@@ -32,7 +32,6 @@ devtools::install_github("soichiroy/cmlogit")
 ```
 ## Example
 
-This is a basic example which shows you how to solve a common problem:
 
 ```{r load_package, message=FALSE}
 library(cmlogit)
@@ -55,7 +54,7 @@ X <- model.matrix(~age + gender, data = cces_nc)
 
 ## fit
 fit <- cmlogit(Y = Y, X = X, popY = popY, popX = popX, popN = popN,
-               control = list(intercept = FALSE))
+               control = list(intercept = FALSE, tol_pred = 0.01))
 
 
 ## result
@@ -70,7 +69,6 @@ res <- cbind(popY,
 
 knitr::kable(res, col.names = c("population", "cmlogit", "emlogit", "raw prop."),
              digits = 4)
-
 ```
 
 
@@ -83,4 +81,85 @@ for (i in 1:3) {
        main = rownames(res)[i+1])
   abline(0, 1, col = 'gray', lty = 2)  
 }
+```
+
+
+
+## Application to Post-Stratification
+
+
+```{r}
+# estimate state-wide quantity 
+data("districts_nc")
+data(estimands_nc)
+
+## turnout in NC 
+turnout <- sum(estimands_nc$totalvotes) / sum(estimands_nc$vap)
+
+## raw estimate without adjustment 
+turnout_naive <- mean(cces_nc$vv_turnout)
+
+## estimates stratified on educ, age, and gender 
+pop_tab <- acs_nc %>% count(educ, age, gender, wt = N) %>% 
+    mutate(weight = n / sum(n))
+nonpar <- cces_nc %>% group_by(educ, age, gender) %>% 
+  summarise(turnout = sum(vv_turnout) / n(), .groups = "drop") %>%
+  left_join(pop_tab, by = c("educ", "age", "gender")) %>% 
+  mutate(scale_weight = weight / sum(weight)) 
+turnout_nonpar <- nonpar$scale_weight %*% nonpar$turnout
+
+
+## cmlogit 
+pop_tab2 <- acs_nc %>% count(age, gender, wt = N) %>% mutate(prop = n / sum(n)) 
+
+# compute the joint table 
+tmp  <- pop_tab2$prop
+prYX <- apply(popX %*% bbs, 1, function(x) exp(x) / sum(exp(x)))  
+pr_joint <- data.frame(t(sapply(1:length(tmp), function(i) prYX[,i] * tmp[i])))
+colnames(pr_joint) <- c("HS or Less", "Some College", "4-Year", "Post-Grad")
+pop_tab2 <- bind_cols(pop_tab2, pr_joint) %>% 
+  select(-n, -prop) %>% 
+  tidyr::pivot_longer(cols = c(`HS or Less`, `Some College`, `4-Year`, `Post-Grad`), 
+                      names_to = "educ", values_to = "weights")
+
+# estimate with the estimated weigthts
+weight_cmlogit <- cces_nc %>% group_by(educ, age, gender) %>% 
+  summarise(turnout = sum(vv_turnout) / n(), .groups = "drop") %>%
+  left_join(pop_tab2, by = c("educ", "age", "gender")) %>% 
+  mutate(scale_weight = weights / sum(weights)) 
+turnout_cmlogit <- weight_cmlogit$scale_weight %*% weight_cmlogit$turnout
+
+## emlogit 
+pop_tab3 <- acs_nc %>% count(age, gender, wt = N) %>%  mutate(prop = n / sum(n)) 
+
+# compute the joint table 
+tmp  <- pop_tab3$prop
+prYX <- apply(popX %*% bb0, 1, function(x) exp(x) / sum(exp(x)))  
+pr_joint <- data.frame(t(sapply(1:length(tmp), function(i) prYX[,i] * tmp[i])))
+colnames(pr_joint) <- c("HS or Less", "Some College", "4-Year", "Post-Grad")
+pop_tab3 <- bind_cols(pop_tab3, pr_joint) %>% 
+  select(-n, -prop) %>% 
+  tidyr::pivot_longer(cols = c(`HS or Less`, `Some College`, `4-Year`, `Post-Grad`), 
+                      names_to = "educ", values_to = "weights")
+
+# estimate with the estimated weights
+weight_emlogit <- cces_nc %>% group_by(educ, age, gender) %>% 
+  summarise(turnout = sum(vv_turnout) / n(), .groups = "drop") %>%
+  left_join(pop_tab3, by = c("educ", "age", "gender")) %>% 
+  mutate(scale_weight = weights / sum(weights)) 
+turnout_emlogit <- weight_emlogit$scale_weight %*% weight_emlogit$turnout
+
+
+
+## results
+est <- c(turnout_naive, turnout_nonpar, 
+         turnout_cmlogit, turnout_emlogit)
+estimator  <- c("Sample Mean", "Post-str. w/ True Joint",
+                "Post-str. w/ cmlogit Joint",
+                "Post-str. w/ emlogit Joint")
+knitr::kable(
+  cbind(estimator, round(est, 3), round(turnout, 3)),
+  col.names = c("Estimator", "Estimate", "Truth"),
+  digits = 3
+)
 ```
