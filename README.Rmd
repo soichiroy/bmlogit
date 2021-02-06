@@ -7,6 +7,7 @@ output: github_document
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
+  cache = TRUE,
   comment = "#>",
   fig.path = "man/figures/README-",
   out.width = "100%"
@@ -70,4 +71,16 @@ res <- cbind(popY,
 knitr::kable(res, col.names = c("population", "cmlogit", "emlogit", "raw prop."),
              digits = 4)
 
+```
+
+
+```{r, dpi=450, fig.height=3.5, fig.width=7.5}
+## coefficients
+par(mfrow = c(1, 3), mar = c(4, 4, 2, 1), pty = 's')
+for (i in 1:3) {
+  plot(bb0[,i+1], bbs[,i+1], pch = 16,
+       xlab = "emlogit", ylab = "cmlogit",
+       main = rownames(res)[i+1])
+  abline(0, 1, col = 'gray', lty = 2)  
+}
 ```

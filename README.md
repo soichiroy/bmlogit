@@ -68,3 +68,16 @@ knitr::kable(res, col.names = c("population", "cmlogit", "emlogit", "raw prop.")
 | educSome College |     0.3266 |  0.3266 |  0.3536 |    0.3552 |
 | educ4-Year       |     0.1835 |  0.1864 |  0.2310 |    0.2311 |
 | educPost-Grad    |     0.0956 |  0.0977 |  0.1201 |    0.1196 |
+
+``` r
+## coefficients
+par(mfrow = c(1, 3), mar = c(4, 4, 2, 1), pty = 's')
+for (i in 1:3) {
+  plot(bb0[,i+1], bbs[,i+1], pch = 16,
+       xlab = "emlogit", ylab = "cmlogit",
+       main = rownames(res)[i+1])
+  abline(0, 1, col = 'gray', lty = 2)  
+}
+```
+
+<img src="man/figures/README-unnamed-chunk-2-1.png" width="100%" />
