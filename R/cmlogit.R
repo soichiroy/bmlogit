@@ -33,7 +33,10 @@ cmlogit <- function(Y, X, popY, popX, popN, control = list()) {
     dat_list      = dat_list
   )
 
-  return(list(fit = fit, init = init))
+  ## coef
+  coef_est <- cbind(0, matrix(fit$solution, nrow = ncol(X)))
+
+  return(list(fit = fit, init = init, coef = coef_est))
 }
 
 
