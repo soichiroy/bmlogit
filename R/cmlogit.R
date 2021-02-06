@@ -95,6 +95,12 @@ fn_ct <- function(x, dat_list) {
   ##
   ## where the expectation is over X ~ p(X)
   ##
+  ## We replace the above hard constraints with
+  ##
+  ## || Pr(Y = j) = E[exp(Xβ[j]) / sum(exp(Xβ[j']))] || <= ϵ
+  ##
+  ## where ϵ is set to a small constant
+  ##
   bmat <- cbind(0, matrix(x, nrow = ncol(X), ncol = n_item-1))
 
   ## Pr(Y = j | X) -- n by J
