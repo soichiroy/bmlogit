@@ -1,0 +1,73 @@
+---
+output: github_document
+---
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "man/figures/README-",
+  out.width = "100%"
+)
+```
+
+# cmlogit
+
+<!-- badges: start -->
+<!-- badges: end -->
+
+The goal of `cmlogit` is to estimate the multinominal logistic regression with
+prediction constraints.
+
+## Installation
+
+You can install the development version from [GitHub](https://github.com/) with:
+
+``` r
+# install.packages("devtools")
+devtools::install_github("soichiroy/cmlogit")
+```
+## Example
+
+This is a basic example which shows you how to solve a common problem:
+
+```{r example}
+library(cmlogit)
+library(synthArea)
+library(tidyverse)
+
+
+## load data
+data(cces_nc)
+data(acs_nc)
+
+## population data
+popY <- acs_nc %>% count(educ, wt = N) %>% mutate(prop = n / sum(n)) %>% pull(prop)
+popX <- model.matrix(~age + gender, data = acs_nc %>% count(age, gender, wt = N))
+popN <- acs_nc %>% count(age, gender, wt = N) %>% pull(n)
+
+## survey data
+Y <- model.matrix(~educ-1, data = cces_nc)
+X <- model.matrix(~age + gender, data = cces_nc)
+
+## fit
+fit <- cmlogit(Y = Y, X = X, popY = popY, popX = popX, popN = popN,
+               control = list(intercept = FALSE))
+
+
+## result
+bb0 <- cbind(0, matrix(fit$fit$x0, nrow = ncol(X)))
+bbs <- cbind(0, matrix(fit$fit$solution, nrow = ncol(X)))
+
+res <- cbind(popY,
+  apply(popX %*% bbs, 1, function(x) exp(x) / sum(exp(x))) %*% (popN / sum(popN)),
+  apply(popX %*% bb0, 1, function(x) exp(x) / sum(exp(x))) %*% (popN / sum(popN)),
+  colMeans(Y)
+)
+
+knitr::kable(res, col.names = c("population", "cmlogit", "emlogit", "raw prop."),
+             digits = 4)
+
+```
