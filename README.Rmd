@@ -33,12 +33,12 @@ devtools::install_github("soichiroy/cmlogit")
 
 This is a basic example which shows you how to solve a common problem:
 
-```{r example}
+```{r load_package, message=FALSE}
 library(cmlogit)
 library(synthArea)
-library(tidyverse)
+```
 
-
+```{r example}
 ## load data
 data(cces_nc)
 data(acs_nc)

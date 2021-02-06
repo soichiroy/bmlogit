@@ -27,26 +27,9 @@ This is a basic example which shows you how to solve a common problem:
 ``` r
 library(cmlogit)
 library(synthArea)
-#> Loading required package: dplyr
-#> 
-#> Attaching package: 'dplyr'
-#> The following objects are masked from 'package:stats':
-#> 
-#>     filter, lag
-#> The following objects are masked from 'package:base':
-#> 
-#>     intersect, setdiff, setequal, union
-library(tidyverse)
-#> ── Attaching packages ─────────────────────────────────────── tidyverse 1.3.0 ──
-#> ✔ ggplot2 3.3.2     ✔ purrr   0.3.4
-#> ✔ tibble  3.0.4     ✔ stringr 1.4.0
-#> ✔ tidyr   1.1.2     ✔ forcats 0.5.0
-#> ✔ readr   1.3.1
-#> ── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
-#> ✖ dplyr::filter() masks stats::filter()
-#> ✖ dplyr::lag()    masks stats::lag()
+```
 
-
+``` r
 ## load data
 data(cces_nc)
 data(acs_nc)

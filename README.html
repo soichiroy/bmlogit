@@ -615,57 +615,37 @@ body {
 <h2 id="example">Example</h2>
 <p>This is a basic example which shows you how to solve a common problem:</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1"></a><span class="kw">library</span>(cmlogit)</span>
-<span id="cb2-2"><a href="#cb2-2"></a><span class="kw">library</span>(synthArea)</span>
-<span id="cb2-3"><a href="#cb2-3"></a><span class="co">#&gt; Loading required package: dplyr</span></span>
-<span id="cb2-4"><a href="#cb2-4"></a><span class="co">#&gt; </span></span>
-<span id="cb2-5"><a href="#cb2-5"></a><span class="co">#&gt; Attaching package: &#39;dplyr&#39;</span></span>
-<span id="cb2-6"><a href="#cb2-6"></a><span class="co">#&gt; The following objects are masked from &#39;package:stats&#39;:</span></span>
-<span id="cb2-7"><a href="#cb2-7"></a><span class="co">#&gt; </span></span>
-<span id="cb2-8"><a href="#cb2-8"></a><span class="co">#&gt;     filter, lag</span></span>
-<span id="cb2-9"><a href="#cb2-9"></a><span class="co">#&gt; The following objects are masked from &#39;package:base&#39;:</span></span>
-<span id="cb2-10"><a href="#cb2-10"></a><span class="co">#&gt; </span></span>
-<span id="cb2-11"><a href="#cb2-11"></a><span class="co">#&gt;     intersect, setdiff, setequal, union</span></span>
-<span id="cb2-12"><a href="#cb2-12"></a><span class="kw">library</span>(tidyverse)</span>
-<span id="cb2-13"><a href="#cb2-13"></a><span class="co">#&gt; ── Attaching packages ─────────────────────────────────────── tidyverse 1.3.0 ──</span></span>
-<span id="cb2-14"><a href="#cb2-14"></a><span class="co">#&gt; ✔ ggplot2 3.3.2     ✔ purrr   0.3.4</span></span>
-<span id="cb2-15"><a href="#cb2-15"></a><span class="co">#&gt; ✔ tibble  3.0.4     ✔ stringr 1.4.0</span></span>
-<span id="cb2-16"><a href="#cb2-16"></a><span class="co">#&gt; ✔ tidyr   1.1.2     ✔ forcats 0.5.0</span></span>
-<span id="cb2-17"><a href="#cb2-17"></a><span class="co">#&gt; ✔ readr   1.3.1</span></span>
-<span id="cb2-18"><a href="#cb2-18"></a><span class="co">#&gt; ── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──</span></span>
-<span id="cb2-19"><a href="#cb2-19"></a><span class="co">#&gt; ✖ dplyr::filter() masks stats::filter()</span></span>
-<span id="cb2-20"><a href="#cb2-20"></a><span class="co">#&gt; ✖ dplyr::lag()    masks stats::lag()</span></span>
-<span id="cb2-21"><a href="#cb2-21"></a></span>
-<span id="cb2-22"><a href="#cb2-22"></a></span>
-<span id="cb2-23"><a href="#cb2-23"></a><span class="co">## load data</span></span>
-<span id="cb2-24"><a href="#cb2-24"></a><span class="kw">data</span>(cces_nc)</span>
-<span id="cb2-25"><a href="#cb2-25"></a><span class="kw">data</span>(acs_nc)</span>
-<span id="cb2-26"><a href="#cb2-26"></a></span>
-<span id="cb2-27"><a href="#cb2-27"></a><span class="co">## population data</span></span>
-<span id="cb2-28"><a href="#cb2-28"></a>popY &lt;-<span class="st"> </span>acs_nc <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">count</span>(educ, <span class="dt">wt =</span> N) <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">mutate</span>(<span class="dt">prop =</span> n <span class="op">/</span><span class="st"> </span><span class="kw">sum</span>(n)) <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">pull</span>(prop)</span>
-<span id="cb2-29"><a href="#cb2-29"></a>popX &lt;-<span class="st"> </span><span class="kw">model.matrix</span>(<span class="op">~</span>age <span class="op">+</span><span class="st"> </span>gender, <span class="dt">data =</span> acs_nc <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">count</span>(age, gender, <span class="dt">wt =</span> N))</span>
-<span id="cb2-30"><a href="#cb2-30"></a>popN &lt;-<span class="st"> </span>acs_nc <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">count</span>(age, gender, <span class="dt">wt =</span> N) <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">pull</span>(n)</span>
-<span id="cb2-31"><a href="#cb2-31"></a></span>
-<span id="cb2-32"><a href="#cb2-32"></a><span class="co">## survey data</span></span>
-<span id="cb2-33"><a href="#cb2-33"></a>Y &lt;-<span class="st"> </span><span class="kw">model.matrix</span>(<span class="op">~</span>educ<span class="dv">-1</span>, <span class="dt">data =</span> cces_nc)</span>
-<span id="cb2-34"><a href="#cb2-34"></a>X &lt;-<span class="st"> </span><span class="kw">model.matrix</span>(<span class="op">~</span>age <span class="op">+</span><span class="st"> </span>gender, <span class="dt">data =</span> cces_nc)</span>
-<span id="cb2-35"><a href="#cb2-35"></a></span>
-<span id="cb2-36"><a href="#cb2-36"></a><span class="co">## fit</span></span>
-<span id="cb2-37"><a href="#cb2-37"></a>fit &lt;-<span class="st"> </span><span class="kw">cmlogit</span>(<span class="dt">Y =</span> Y, <span class="dt">X =</span> X, <span class="dt">popY =</span> popY, <span class="dt">popX =</span> popX, <span class="dt">popN =</span> popN,</span>
-<span id="cb2-38"><a href="#cb2-38"></a>               <span class="dt">control =</span> <span class="kw">list</span>(<span class="dt">intercept =</span> <span class="ot">FALSE</span>))</span>
-<span id="cb2-39"><a href="#cb2-39"></a></span>
-<span id="cb2-40"><a href="#cb2-40"></a></span>
-<span id="cb2-41"><a href="#cb2-41"></a><span class="co">## result</span></span>
-<span id="cb2-42"><a href="#cb2-42"></a>bb0 &lt;-<span class="st"> </span><span class="kw">cbind</span>(<span class="dv">0</span>, <span class="kw">matrix</span>(fit<span class="op">$</span>fit<span class="op">$</span>x0, <span class="dt">nrow =</span> <span class="kw">ncol</span>(X)))</span>
-<span id="cb2-43"><a href="#cb2-43"></a>bbs &lt;-<span class="st"> </span><span class="kw">cbind</span>(<span class="dv">0</span>, <span class="kw">matrix</span>(fit<span class="op">$</span>fit<span class="op">$</span>solution, <span class="dt">nrow =</span> <span class="kw">ncol</span>(X)))</span>
-<span id="cb2-44"><a href="#cb2-44"></a></span>
-<span id="cb2-45"><a href="#cb2-45"></a>res &lt;-<span class="st"> </span><span class="kw">cbind</span>(popY,</span>
-<span id="cb2-46"><a href="#cb2-46"></a>  <span class="kw">apply</span>(popX <span class="op">%*%</span><span class="st"> </span>bbs, <span class="dv">1</span>, <span class="cf">function</span>(x) <span class="kw">exp</span>(x) <span class="op">/</span><span class="st"> </span><span class="kw">sum</span>(<span class="kw">exp</span>(x))) <span class="op">%*%</span><span class="st"> </span>(popN <span class="op">/</span><span class="st"> </span><span class="kw">sum</span>(popN)),</span>
-<span id="cb2-47"><a href="#cb2-47"></a>  <span class="kw">apply</span>(popX <span class="op">%*%</span><span class="st"> </span>bb0, <span class="dv">1</span>, <span class="cf">function</span>(x) <span class="kw">exp</span>(x) <span class="op">/</span><span class="st"> </span><span class="kw">sum</span>(<span class="kw">exp</span>(x))) <span class="op">%*%</span><span class="st"> </span>(popN <span class="op">/</span><span class="st"> </span><span class="kw">sum</span>(popN)),</span>
-<span id="cb2-48"><a href="#cb2-48"></a>  <span class="kw">colMeans</span>(Y)</span>
-<span id="cb2-49"><a href="#cb2-49"></a>)</span>
-<span id="cb2-50"><a href="#cb2-50"></a></span>
-<span id="cb2-51"><a href="#cb2-51"></a>knitr<span class="op">::</span><span class="kw">kable</span>(res, <span class="dt">col.names =</span> <span class="kw">c</span>(<span class="st">&quot;population&quot;</span>, <span class="st">&quot;cmlogit&quot;</span>, <span class="st">&quot;emlogit&quot;</span>, <span class="st">&quot;raw prop.&quot;</span>),</span>
-<span id="cb2-52"><a href="#cb2-52"></a>             <span class="dt">digits =</span> <span class="dv">4</span>)</span></code></pre></div>
+<span id="cb2-2"><a href="#cb2-2"></a><span class="kw">library</span>(synthArea)</span></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1"></a><span class="co">## load data</span></span>
+<span id="cb3-2"><a href="#cb3-2"></a><span class="kw">data</span>(cces_nc)</span>
+<span id="cb3-3"><a href="#cb3-3"></a><span class="kw">data</span>(acs_nc)</span>
+<span id="cb3-4"><a href="#cb3-4"></a></span>
+<span id="cb3-5"><a href="#cb3-5"></a><span class="co">## population data</span></span>
+<span id="cb3-6"><a href="#cb3-6"></a>popY &lt;-<span class="st"> </span>acs_nc <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">count</span>(educ, <span class="dt">wt =</span> N) <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">mutate</span>(<span class="dt">prop =</span> n <span class="op">/</span><span class="st"> </span><span class="kw">sum</span>(n)) <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">pull</span>(prop)</span>
+<span id="cb3-7"><a href="#cb3-7"></a>popX &lt;-<span class="st"> </span><span class="kw">model.matrix</span>(<span class="op">~</span>age <span class="op">+</span><span class="st"> </span>gender, <span class="dt">data =</span> acs_nc <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">count</span>(age, gender, <span class="dt">wt =</span> N))</span>
+<span id="cb3-8"><a href="#cb3-8"></a>popN &lt;-<span class="st"> </span>acs_nc <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">count</span>(age, gender, <span class="dt">wt =</span> N) <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">pull</span>(n)</span>
+<span id="cb3-9"><a href="#cb3-9"></a></span>
+<span id="cb3-10"><a href="#cb3-10"></a><span class="co">## survey data</span></span>
+<span id="cb3-11"><a href="#cb3-11"></a>Y &lt;-<span class="st"> </span><span class="kw">model.matrix</span>(<span class="op">~</span>educ<span class="dv">-1</span>, <span class="dt">data =</span> cces_nc)</span>
+<span id="cb3-12"><a href="#cb3-12"></a>X &lt;-<span class="st"> </span><span class="kw">model.matrix</span>(<span class="op">~</span>age <span class="op">+</span><span class="st"> </span>gender, <span class="dt">data =</span> cces_nc)</span>
+<span id="cb3-13"><a href="#cb3-13"></a></span>
+<span id="cb3-14"><a href="#cb3-14"></a><span class="co">## fit</span></span>
+<span id="cb3-15"><a href="#cb3-15"></a>fit &lt;-<span class="st"> </span><span class="kw">cmlogit</span>(<span class="dt">Y =</span> Y, <span class="dt">X =</span> X, <span class="dt">popY =</span> popY, <span class="dt">popX =</span> popX, <span class="dt">popN =</span> popN,</span>
+<span id="cb3-16"><a href="#cb3-16"></a>               <span class="dt">control =</span> <span class="kw">list</span>(<span class="dt">intercept =</span> <span class="ot">FALSE</span>))</span>
+<span id="cb3-17"><a href="#cb3-17"></a></span>
+<span id="cb3-18"><a href="#cb3-18"></a></span>
+<span id="cb3-19"><a href="#cb3-19"></a><span class="co">## result</span></span>
+<span id="cb3-20"><a href="#cb3-20"></a>bb0 &lt;-<span class="st"> </span><span class="kw">cbind</span>(<span class="dv">0</span>, <span class="kw">matrix</span>(fit<span class="op">$</span>fit<span class="op">$</span>x0, <span class="dt">nrow =</span> <span class="kw">ncol</span>(X)))</span>
+<span id="cb3-21"><a href="#cb3-21"></a>bbs &lt;-<span class="st"> </span><span class="kw">cbind</span>(<span class="dv">0</span>, <span class="kw">matrix</span>(fit<span class="op">$</span>fit<span class="op">$</span>solution, <span class="dt">nrow =</span> <span class="kw">ncol</span>(X)))</span>
+<span id="cb3-22"><a href="#cb3-22"></a></span>
+<span id="cb3-23"><a href="#cb3-23"></a>res &lt;-<span class="st"> </span><span class="kw">cbind</span>(popY,</span>
+<span id="cb3-24"><a href="#cb3-24"></a>  <span class="kw">apply</span>(popX <span class="op">%*%</span><span class="st"> </span>bbs, <span class="dv">1</span>, <span class="cf">function</span>(x) <span class="kw">exp</span>(x) <span class="op">/</span><span class="st"> </span><span class="kw">sum</span>(<span class="kw">exp</span>(x))) <span class="op">%*%</span><span class="st"> </span>(popN <span class="op">/</span><span class="st"> </span><span class="kw">sum</span>(popN)),</span>
+<span id="cb3-25"><a href="#cb3-25"></a>  <span class="kw">apply</span>(popX <span class="op">%*%</span><span class="st"> </span>bb0, <span class="dv">1</span>, <span class="cf">function</span>(x) <span class="kw">exp</span>(x) <span class="op">/</span><span class="st"> </span><span class="kw">sum</span>(<span class="kw">exp</span>(x))) <span class="op">%*%</span><span class="st"> </span>(popN <span class="op">/</span><span class="st"> </span><span class="kw">sum</span>(popN)),</span>
+<span id="cb3-26"><a href="#cb3-26"></a>  <span class="kw">colMeans</span>(Y)</span>
+<span id="cb3-27"><a href="#cb3-27"></a>)</span>
+<span id="cb3-28"><a href="#cb3-28"></a></span>
+<span id="cb3-29"><a href="#cb3-29"></a>knitr<span class="op">::</span><span class="kw">kable</span>(res, <span class="dt">col.names =</span> <span class="kw">c</span>(<span class="st">&quot;population&quot;</span>, <span class="st">&quot;cmlogit&quot;</span>, <span class="st">&quot;emlogit&quot;</span>, <span class="st">&quot;raw prop.&quot;</span>),</span>
+<span id="cb3-30"><a href="#cb3-30"></a>             <span class="dt">digits =</span> <span class="dv">4</span>)</span></code></pre></div>
 <table>
 <thead>
 <tr class="header">
