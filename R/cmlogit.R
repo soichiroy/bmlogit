@@ -75,7 +75,16 @@ fn_ll <- function(x, dat_list) {
 #' @param x A vector of parameters
 #' @keywords internal
 fn_ll_grad <- function(x, dat_list) {
+  Y <- dat_list$Y
+  X <- dat_list$X
+  n_item <- dat_list$n_item
 
+  ## bmat = [beta[1] = 0,... beta[j], ..., beta[J]]
+  bmat <- cbind(0, matrix(x, nrow = ncol(X), ncol = n_item-1))
+  resid <- Y - t(apply(X %*% bmat, 1, function(x) exp(x) / sum(exp(x))))
+  score <- t(resid) %*% X
+  grad <- as.vector(t(score)[,-1])
+  return(grad)
 }
 
 
