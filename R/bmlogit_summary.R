@@ -1,6 +1,6 @@
 
 #' Obtain the predicted probability
-#' @param obj An output of \code{cmlogit()} funcion.
+#' @param obj An output of \code{bmlogit()} funcion.
 #' @param newdata A matrix of newdata. If not provided, the insample fit is returned.
 #' @param counts A vector of population counts corresponding to the rows of \code{newdata}.
 #'  If provided \code{predict} function returns the predicted outcome at the aggregate level.
@@ -9,7 +9,7 @@
 #'  If \code{counts} is provided, this argument will be ignored.
 #' @return A matrix (or a vector) of predicted probabilities.
 #' @export
-predict.cmlogit <- function(obj, newdata = NULL, counts = NULL, weights = NULL) {
+predict.bmlogit <- function(obj, newdata = NULL, counts = NULL, weights = NULL) {
 
   if (is.null(newdata)) {
     pred <- obj$fitted

@@ -14,12 +14,12 @@ knitr::opts_chunk$set(
 )
 ```
 
-# cmlogit
+# bmlogit
 
 <!-- badges: start -->
 <!-- badges: end -->
 
-The goal of `cmlogit` is to estimate the multinominal logistic regression with
+The goal of `bmlogit` is to estimate the multinominal logistic regression with
 prediction constraints.
 
 ## Installation
@@ -28,13 +28,13 @@ You can install the development version from [GitHub](https://github.com/) with:
 
 ``` r
 # install.packages("devtools")
-devtools::install_github("soichiroy/cmlogit")
+devtools::install_github("soichiroy/bmlogit")
 ```
 ## Example
 
 
 ```{r load_package, message=FALSE}
-library(cmlogit)
+library(bmlogit)
 library(emlogit)
 library(synthArea)
 ```
@@ -54,7 +54,7 @@ Y <- model.matrix(~educ-1, data = cces_nc)
 X <- model.matrix(~age + gender, data = cces_nc)[,-1]
 
 ## fit
-fit <- cmlogit(Y = Y, X = X, target_Y = target_Y, pop_X = pop_X, count_N = count_N,
+fit <- bmlogit(Y = Y, X = X, target_Y = target_Y, pop_X = pop_X, count_N = count_N,
                control = list(tol_pred = 0.01))
 
 
@@ -70,7 +70,7 @@ res <- cbind(target_Y,
   colMeans(Y)
 )
 
-knitr::kable(res, col.names = c("population", "cmlogit", "emlogit", "raw prop."),
+knitr::kable(res, col.names = c("population", "bmlogit", "emlogit", "raw prop."),
              digits = 4)
 ```
 
@@ -80,7 +80,7 @@ knitr::kable(res, col.names = c("population", "cmlogit", "emlogit", "raw prop.")
 par(mfrow = c(1, 3), mar = c(4, 4, 2, 1), pty = 's')
 for (i in 1:3) {
   plot(fit2$coef, fit$coef, pch = 16,
-       xlab = "emlogit", ylab = "cmlogit",
+       xlab = "emlogit", ylab = "bmlogit",
        main = rownames(res)[i+1])
   abline(0, 1, col = 'gray', lty = 2)  
 }
@@ -112,7 +112,7 @@ nonpar <- cces_nc %>% group_by(educ, age, gender) %>%
 turnout_nonpar <- nonpar$scale_weight %*% nonpar$turnout
 
 
-## cmlogit
+## bmlogit
 pop_tab2 <- acs_nc %>% count(age, gender, wt = N) %>% mutate(prop = n / sum(n))
 
 # compute the joint table
@@ -126,11 +126,11 @@ pop_tab2 <- bind_cols(pop_tab2, pr_joint) %>%
                       names_to = "educ", values_to = "weights")
 
 # estimate with the estimated weigthts
-weight_cmlogit <- cces_nc %>% group_by(educ, age, gender) %>%
+weight_bmlogit <- cces_nc %>% group_by(educ, age, gender) %>%
   summarise(turnout = sum(vv_turnout) / n(), .groups = "drop") %>%
   left_join(pop_tab2, by = c("educ", "age", "gender")) %>%
   mutate(scale_weight = weights / sum(weights))
-turnout_cmlogit <- weight_cmlogit$scale_weight %*% weight_cmlogit$turnout
+turnout_bmlogit <- weight_bmlogit$scale_weight %*% weight_bmlogit$turnout
 
 ## emlogit
 pop_tab3 <- acs_nc %>% count(age, gender, wt = N) %>%  mutate(prop = n / sum(n))
@@ -156,9 +156,9 @@ turnout_emlogit <- weight_emlogit$scale_weight %*% weight_emlogit$turnout
 
 ## results  
 est <- c(turnout_naive, turnout_nonpar,
-         turnout_cmlogit, turnout_emlogit)
+         turnout_bmlogit, turnout_emlogit)
 estimator  <- c("Sample Mean", "Post-str. w/ True Joint",
-                "Post-str. w/ cmlogit Joint",
+                "Post-str. w/ bmlogit Joint",
                 "Post-str. w/ emlogit Joint")
 knitr::kable(
   cbind(estimator, round(est, 3), round(turnout, 3)),
