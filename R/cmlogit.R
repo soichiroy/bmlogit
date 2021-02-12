@@ -5,9 +5,19 @@
 #' @export
 cmlogit <- function(Y, X, popY, popX, popN, control = list()) {
 
+  control <- input_check(control)
+
   ## obtain the initial value via emlogit (multinominal logit without constraints )
   init <- emlogit::emlogit(Y, X, control)
   init_coef <- init$coef[,-1]
+
+  X <- as.matrix(X)
+  # control <- input_check(control)
+  if (isTRUE(control$intercept)) {
+    X <- cbind(1, X)
+    popX <- cbind(1, popX)
+  }
+
 
   ## setting
   local_opts <- list("algorithm" = "NLOPT_LN_COBYLA",
@@ -25,20 +35,28 @@ cmlogit <- function(Y, X, popY, popX, popN, control = list()) {
   fit <- nloptr(
     x0            = as.vector(init_coef),
     eval_f        = fn_ll,
-    # eval_grad_f   = fn_ll_grad,
-    # eval_g_eq     = fn_ct,
-    # eval_jac_g_eq = fn_ct_jac
     eval_g_ineq   = fn_ct,
     opts          = opts,
     dat_list      = dat_list
   )
 
   ## coef
-  coef_est <- cbind(0, matrix(fit$solution, nrow = ncol(X)))
+  coef_est  <- cbind(0, matrix(fit$solution, nrow = n_var, ncol = n_item - 1))
+  coef_init <- init$coef
+  ## predict
+  prob <- predict_prob(X, coef_est)
 
-  return(list(fit = fit, init = init, coef = coef_est))
+  out <- list(coef = coef_est, fitted = prob, coef_init = coef_init, control = control)
+  class(out) <- c("cmlogit", "cmlogit.est")
+  return(out)
 }
 
+
+predict_prob <- function(X, coef) {
+  Xb <- X %*% coef
+  pr <- t(apply(Xb, 1, function(x) exp(x) / sum(exp(x))))
+  return(pr)
+}
 
 # compute log(exp(x[1]) + ... + exp(x[n]))
 log_sum_exp <- function(x) {
@@ -60,7 +78,7 @@ fn_ll <- function(x, dat_list) {
   n_item <- dat_list$n_item
 
   ## bmat = [beta[1] = 0,... beta[j], ..., beta[J]]
-  bmat <- cbind(0, matrix(x, nrow = ncol(X), ncol = n_item-1))
+  bmat <- cbind(0, matrix(x, nrow = dat_list$n_var, ncol = n_item-1))
 
   ## compute Xβ - n by J
   Xb <- X %*% bmat
@@ -80,7 +98,7 @@ fn_ll_grad <- function(x, dat_list) {
   n_item <- dat_list$n_item
 
   ## bmat = [beta[1] = 0,... beta[j], ..., beta[J]]
-  bmat <- cbind(0, matrix(x, nrow = ncol(X), ncol = n_item-1))
+  bmat <- cbind(0, matrix(x, nrow = dat_list$n_var, ncol = n_item-1))
   resid <- Y - t(apply(X %*% bmat, 1, function(x) exp(x) / sum(exp(x))))
   score <- t(resid) %*% X
   grad <- as.vector(t(score)[,-1])
@@ -114,7 +132,7 @@ fn_ct <- function(x, dat_list) {
   ##
   ## where ϵ is set to a small constant
   ##
-  bmat <- cbind(0, matrix(x, nrow = ncol(X), ncol = n_item-1))
+  bmat <- cbind(0, matrix(x, nrow = dat_list$n_var, ncol = n_item-1))
 
   ## Pr(Y = j | X) -- n by J
   prYX  <- apply(popX %*% bmat, 1, function(x) exp(x) / sum(exp(x)))
@@ -125,4 +143,52 @@ fn_ct <- function(x, dat_list) {
   ## compute the loss
   loss <- sum(abs(popY - prYj)) - ep
   return(loss)
+}
+
+
+
+
+#' Input check
+#' A function to set the default values of \code{control}.
+#' @param control A list of control parameters.
+#' @keywords internal
+input_check <- function(control) {
+  if (!exists("max_iter", control)) {
+    control$max_iter <- 200
+  }
+
+  if (!exists("tol", control)) {
+    control$tol <- 1e-6
+  }
+
+  if (!exists("tol_pred", control)) {
+    control$tol_pred <- 0.01
+  }
+
+
+  if (!exists("verbose", control)) {
+    control$verbose = FALSE
+  }
+
+  if (!exists("intercept", control)) {
+    control$intercept <- TRUE
+  }
+
+  if (!exists("robust", control)) {
+    control$robust <- FALSE
+  }
+
+  if (!exists("variance", control)) {
+    control$variance <- TRUE
+  }
+
+  if (!exists("initialize", control)) {
+    control$initialize <- "ls"
+  } else {
+    if (!(control$initialize %in% c("ls", "random"))) {
+      stop("Not a supported initialization method")
+    }
+  }
+
+  return(control)
 }
