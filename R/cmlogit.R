@@ -1,9 +1,19 @@
 
 
 #' Constrained Multinominal Logistic Regression
+#'
+#' @param Y A matrix of binary outcomes where each columns represents a level of the outcome
+#' @param X A model matrix of covariates. An intercept must be included.
+#' @param target_Y A vector of proportions that the final probabilities should
+#'  align to (with tolerance set in the argument \code{tol_pred} in control). This should
+#'  have the same number of elements as the columns of `Y`.
+#' @param pop_X A table of the unique combinations of the `X` variables.  Together
+#'  with `count_X`, this represents the traditional population table to post-stratify on.
+#' @param count_X A vector of population counts for each of   the possible combinations
+#'  of `X`.  Values must be ordered to be the same as the rows of `pop_X`.
 #' @import nloptr
 #' @export
-cmlogit <- function(Y, X, popY, popX, popN, control = list()) {
+cmlogit <- function(Y, X, target_Y, pop_X, count_N, control = list()) {
 
   control <- input_check(control)
 
@@ -15,7 +25,7 @@ cmlogit <- function(Y, X, popY, popX, popN, control = list()) {
   # control <- input_check(control)
   if (isTRUE(control$intercept)) {
     X <- cbind(1, X)
-    popX <- cbind(1, popX)
+    pop_X <- cbind(1, pop_X)
   }
 
 
@@ -28,7 +38,7 @@ cmlogit <- function(Y, X, popY, popX, popN, control = list()) {
   ## data
   n_item <- ncol(Y)
   n_var  <- ncol(X)
-  dat_list <- list(Y = Y, X = X, popY = popY, popX = popX, popN = popN,
+  dat_list <- list(Y = Y, X = X, target_Y = target_Y, pop_X = pop_X, count_N = count_N,
                    n_item = n_item, n_var = n_var, ep = control$tol_pred)
 
   ## fit
@@ -113,9 +123,9 @@ fn_ct <- function(x, dat_list) {
 
 
   ## obtain data
-  popY <- dat_list$popY
-  popX <- dat_list$popX
-  popN <- dat_list$popN
+  target_Y <- dat_list$target_Y
+  pop_X <- dat_list$pop_X
+  count_N <- dat_list$count_N
   n_item <- dat_list$n_item
   ep     <- dat_list$ep
 
@@ -135,13 +145,13 @@ fn_ct <- function(x, dat_list) {
   bmat <- cbind(0, matrix(x, nrow = dat_list$n_var, ncol = n_item-1))
 
   ## Pr(Y = j | X) -- n by J
-  prYX  <- apply(popX %*% bmat, 1, function(x) exp(x) / sum(exp(x)))
+  prYX  <- apply(pop_X %*% bmat, 1, function(x) exp(x) / sum(exp(x)))
 
   ## Pr(Y = j) = E[Pr(Y = j | X)]
-  prYj  <- as.vector(prYX %*% (popN / sum(popN)))
+  prYj  <- as.vector(prYX %*% (count_N / sum(count_N)))
 
   ## compute the loss
-  loss <- sum(abs(popY - prYj)) - ep
+  loss <- sum(abs(target_Y - prYj)) - ep
   return(loss)
 }
 

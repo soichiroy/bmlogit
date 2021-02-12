@@ -4,7 +4,22 @@
 \alias{cmlogit}
 \title{Constrained Multinominal Logistic Regression}
 \usage{
-cmlogit(Y, X, popY, popX, popN, control = list())
+cmlogit(Y, X, target_Y, pop_X, count_N, control = list())
+}
+\arguments{
+\item{Y}{A matrix of binary outcomes where each columns represents a level of the outcome}
+
+\item{X}{A model matrix of covariates. An intercept must be included.}
+
+\item{target_Y}{A vector of proportions that the final probabilities should
+align to (with tolerance set in the argument \code{tol_pred} in control). This should
+have the same number of elements as the columns of \code{Y}.}
+
+\item{pop_X}{A table of the unique combinations of the \code{X} variables.  Together
+with \code{count_X}, this represents the traditional population table to post-stratify on.}
+
+\item{count_X}{A vector of population counts for each of   the possible combinations
+of \code{X}.  Values must be ordered to be the same as the rows of \code{pop_X}.}
 }
 \description{
 Constrained Multinominal Logistic Regression
