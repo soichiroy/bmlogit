@@ -21,6 +21,9 @@ with \code{count_X}, this represents the traditional population table to post-st
 \item{count_X}{A vector of population counts for each of   the possible combinations
 of \code{X}.  Values must be ordered to be the same as the rows of \code{pop_X}.}
 }
+\value{
+The function returns a list of class \code{cmlogit} object.
+}
 \description{
 Constrained Multinominal Logistic Regression
 }
