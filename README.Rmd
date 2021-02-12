@@ -45,16 +45,16 @@ data(cces_nc)
 data(acs_nc)
 
 ## population data
-popY <- acs_nc %>% count(educ, wt = N) %>% mutate(prop = n / sum(n)) %>% pull(prop)
-popX <- model.matrix(~age + gender, data = acs_nc %>% count(age, gender, wt = N))[,-1]
-popN <- acs_nc %>% count(age, gender, wt = N) %>% pull(n)
+target_Y <- acs_nc %>% count(educ, wt = N) %>% mutate(prop = n / sum(n)) %>% pull(prop)
+pop_X <- model.matrix(~age + gender, data = acs_nc %>% count(age, gender, wt = N))[,-1]
+count_N <- acs_nc %>% count(age, gender, wt = N) %>% pull(n)
 
 ## survey data
 Y <- model.matrix(~educ-1, data = cces_nc)
 X <- model.matrix(~age + gender, data = cces_nc)[,-1]
 
 ## fit
-fit <- cmlogit(Y = Y, X = X, popY = popY, popX = popX, popN = popN,
+fit <- cmlogit(Y = Y, X = X, target_Y = target_Y, pop_X = pop_X, count_N = count_N,
                control = list(tol_pred = 0.01))
 
 
@@ -64,9 +64,9 @@ fit2 <- emlogit(Y = Y, X = X)
 
 
 ## result
-res <- cbind(popY,
-  predict(fit, newdata = popX, counts = popN),
-  as.vector(crossprod(predict(fit2, newdata = popX),  popN / sum(popN))),
+res <- cbind(target_Y,
+  predict(fit, newdata = pop_X, counts = count_N),
+  as.vector(crossprod(predict(fit2, newdata = pop_X),  count_N / sum(count_N))),
   colMeans(Y)
 )
 
@@ -117,7 +117,7 @@ pop_tab2 <- acs_nc %>% count(age, gender, wt = N) %>% mutate(prop = n / sum(n))
 
 # compute the joint table
 tmp  <- pop_tab2$prop
-prYX <- apply(popX %*% bbs, 1, function(x) exp(x) / sum(exp(x)))  
+prYX <- apply(pop_X %*% bbs, 1, function(x) exp(x) / sum(exp(x)))  
 pr_joint <- data.frame(t(sapply(1:length(tmp), function(i) prYX[,i] * tmp[i])))
 colnames(pr_joint) <- c("HS or Less", "Some College", "4-Year", "Post-Grad")
 pop_tab2 <- bind_cols(pop_tab2, pr_joint) %>%
@@ -137,7 +137,7 @@ pop_tab3 <- acs_nc %>% count(age, gender, wt = N) %>%  mutate(prop = n / sum(n))
 
 # compute the joint table
 tmp  <- pop_tab3$prop
-prYX <- apply(popX %*% bb0, 1, function(x) exp(x) / sum(exp(x)))  
+prYX <- apply(pop_X %*% bb0, 1, function(x) exp(x) / sum(exp(x)))  
 pr_joint <- data.frame(t(sapply(1:length(tmp), function(i) prYX[,i] * tmp[i])))
 colnames(pr_joint) <- c("HS or Less", "Some College", "4-Year", "Post-Grad")
 pop_tab3 <- bind_cols(pop_tab3, pr_joint) %>%
