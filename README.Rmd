@@ -157,9 +157,6 @@ We first do a simple weighted mean for the full joint (which we know in this cas
 data(districts_nc)
 data(estimands_nc)
 
-## turnout in NC
-turnout <- sum(estimands_nc$totalvotes) / sum(estimands_nc$vap)
-
 ## raw estimate without adjustment
 turnout_naive <- mean(cces_nc$vv_turnout)
 
@@ -238,9 +235,17 @@ for (i in c("weight_emlogit", "weight_bmlogit")) {
 ```
 
 
+```{r}
+# turnout <- sum(estimands_nc$totalvotes) / sum(estimands_nc$vap)
+# https://www.ncsbe.gov/results-data/election-results/voter-turnout-statistics
+turnout <- 4.77e6 / sum(estimands_nc$vap)
+```
+
+
 And we finally compare the turnout estimates of the resulting post-stratification. The true statewide turnout is `r round(turnout, 3)`.
 
 ```{r, echo = FALSE}
+
 est <- c(turnout_naive, turnout_nonpar,
          turnout_bmlogit, turnout_emlogit)
 estimator  <- c("Sample Mean", "Post-str. w/ True Joint",

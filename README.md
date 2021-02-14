@@ -132,9 +132,6 @@ this case).
 data(districts_nc)
 data(estimands_nc)
 
-## turnout in NC
-turnout <- sum(estimands_nc$totalvotes) / sum(estimands_nc$vap)
-
 ## raw estimate without adjustment
 turnout_naive <- mean(cces_nc$vv_turnout)
 
@@ -185,12 +182,18 @@ We can check how each synthetic estimator compares to the true cells.
 
 <img src="man/figures/README-joint-bmlogit-emlogit-1.png" width="100%" />
 
+``` r
+# turnout <- sum(estimands_nc$totalvotes) / sum(estimands_nc$vap)
+# https://www.ncsbe.gov/results-data/election-results/voter-turnout-statistics
+turnout <- 4.77e6 / sum(estimands_nc$vap)
+```
+
 And we finally compare the turnout estimates of the resulting
-post-stratification. The true statewide turnout is 0.596.
+post-stratification. The true statewide turnout is 0.608.
 
 | Estimator                  | Estimate |  Error |
 |:---------------------------|---------:|-------:|
-| Sample Mean                |    0.575 | -0.022 |
-| Post-str. w/ True Joint    |    0.570 | -0.027 |
-| Post-str. w/ bmlogit Joint |    0.567 | -0.029 |
-| Post-str. w/ emlogit Joint |    0.579 | -0.017 |
+| Sample Mean                |    0.575 | -0.033 |
+| Post-str. w/ True Joint    |    0.570 | -0.038 |
+| Post-str. w/ bmlogit Joint |    0.567 | -0.040 |
+| Post-str. w/ emlogit Joint |    0.579 | -0.028 |
