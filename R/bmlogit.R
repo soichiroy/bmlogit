@@ -14,7 +14,7 @@
 #' @return The function returns a list of class \code{cmlogit} object.
 #' @import nloptr
 #' @export
-bmlogit <- function(Y, X, target_Y, pop_X, count_N, control = list()) {
+bmlogit <- function(Y, X, target_Y, pop_X, count_X, control = list()) {
 
   control <- input_check(control)
 
@@ -39,7 +39,7 @@ bmlogit <- function(Y, X, target_Y, pop_X, count_N, control = list()) {
   ## data
   n_item <- ncol(Y)
   n_var  <- ncol(X)
-  dat_list <- list(Y = Y, X = X, target_Y = target_Y, pop_X = pop_X, count_N = count_N,
+  dat_list <- list(Y = Y, X = X, target_Y = target_Y, pop_X = pop_X, count_X = count_X,
                    n_item = n_item, n_var = n_var, ep = control$tol_pred)
 
   ## fit
@@ -128,7 +128,7 @@ fn_ct <- function(x, dat_list) {
   ## obtain data
   target_Y <- dat_list$target_Y
   pop_X <- dat_list$pop_X
-  count_N <- dat_list$count_N
+  count_X <- dat_list$count_X
   n_item <- dat_list$n_item
   ep     <- dat_list$ep
 
@@ -151,7 +151,7 @@ fn_ct <- function(x, dat_list) {
   prYX  <- apply(pop_X %*% bmat, 1, function(x) exp(x) / sum(exp(x)))
 
   ## Pr(Y = j) = E[Pr(Y = j | X)]
-  prYj  <- as.vector(prYX %*% (count_N / sum(count_N)))
+  prYj  <- as.vector(prYX %*% (count_X / sum(count_X)))
 
   ## compute the loss
   loss <- sum(abs(target_Y - prYj)) - ep
