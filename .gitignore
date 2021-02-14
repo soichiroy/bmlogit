@@ -1,2 +1,6 @@
 .DS_Store
 README_cache
+.Rproj.user
+
+
+*.Rproj
