@@ -47,7 +47,9 @@ data(cces_nc)
 data(acs_nc)
 
 ## population data
-target_Y <- acs_nc %>% count(educ, wt = N) %>% mutate(prop = n / sum(n)) %>% pull(prop)
+# target_Y <- acs_nc %>% count(educ, wt = N) %>% mutate(prop = n / sum(n)) %>% pull(prop)
+target_Y <- c(0.462, 0.258, 0.184, 0.096)
+
 pop_X <- model.matrix(~age + gender, data = acs_nc %>% count(age, gender, wt = N))[,-1]
 count_N <- acs_nc %>% count(age, gender, wt = N) %>% pull(n)
 
@@ -72,14 +74,14 @@ There is a set multinomial coefficients for each level of the outcome (relative 
 
 ```{r coef-bmlogit-emlogit, dpi=450, fig.height=3.5, fig.width=7.5, echo = FALSE, warning = FALSE}
 
-true_educ <- colMeans(Y)
-names(true_educ) <- str_remove(names(true_educ), "educ")
+raw_educ <- colMeans(Y)
+names(raw_educ) <- str_remove(names(raw_educ), "educ")
 
 par(mfrow = c(1, 3), mar = c(4, 4, 2, 1), pty = 's')
 for (i in 1:3) {
   plot(NA,  NA,
        xlab = "emlogit coef", ylab = "bmlogit coef",
-       main = names(true_educ)[i + 1],
+       main = names(raw_educ)[i + 1],
        xlim = c(-2, 2),
        ylim = c(-2, 2),
        bty = "n", 
@@ -95,7 +97,7 @@ We can compare the resulting predicted values. Each prediction from the regressi
 res <- cbind(target_Y,
   predict(fit, newdata = pop_X, counts = count_N),
   as.vector(crossprod(predict(fit_em, newdata = pop_X),  count_N / sum(count_N))),
-  true_educ
+  raw_educ
 )
 
 knitr::kable(res, col.names = c("Target", "bmlogit", "emlogit", "Raw"),
@@ -103,7 +105,7 @@ knitr::kable(res, col.names = c("Target", "bmlogit", "emlogit", "Raw"),
 ```
 
 
-## Application to Post-Stratification
+## Application to Post-Stratification and Estimatig Turnout
 
 We now try to estimate turnout poststratifying on a synthetic distribution that was created by either emlogit, bmlogit, or simple weights.
 

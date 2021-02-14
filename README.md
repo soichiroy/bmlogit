@@ -35,7 +35,9 @@ data(cces_nc)
 data(acs_nc)
 
 ## population data
-target_Y <- acs_nc %>% count(educ, wt = N) %>% mutate(prop = n / sum(n)) %>% pull(prop)
+# target_Y <- acs_nc %>% count(educ, wt = N) %>% mutate(prop = n / sum(n)) %>% pull(prop)
+target_Y <- c(0.462, 0.258, 0.184, 0.096)
+
 pop_X <- model.matrix(~age + gender, data = acs_nc %>% count(age, gender, wt = N))[,-1]
 count_N <- acs_nc %>% count(age, gender, wt = N) %>% pull(n)
 
@@ -67,9 +69,9 @@ according to their known counts.
 
 |              | Target | bmlogit | emlogit |   Raw |
 |:-------------|-------:|--------:|--------:|------:|
-| HS or Less   |  0.394 |   0.392 |   0.295 | 0.294 |
-| Some College |  0.327 |   0.327 |   0.354 | 0.355 |
-| 4-Year       |  0.184 |   0.185 |   0.231 | 0.231 |
+| HS or Less   |  0.462 |   0.460 |   0.295 | 0.294 |
+| Some College |  0.258 |   0.258 |   0.354 | 0.355 |
+| 4-Year       |  0.184 |   0.186 |   0.231 | 0.231 |
 | Post-Grad    |  0.096 |   0.096 |   0.120 | 0.120 |
 
 ## Application to Post-Stratification
@@ -158,5 +160,5 @@ And we finally compare all four. The true statewide turnout is 0.596.
 |:---------------------------|---------:|-------:|
 | Sample Mean                |    0.575 | -0.022 |
 | Post-str. w/ True Joint    |    0.560 | -0.037 |
-| Post-str. w/ bmlogit Joint |    0.558 | -0.038 |
+| Post-str. w/ bmlogit Joint |    0.553 | -0.043 |
 | Post-str. w/ emlogit Joint |    0.569 | -0.027 |
