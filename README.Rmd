@@ -81,7 +81,7 @@ fit <- bmlogit(Y = Y, X = X,
                target_Y = target_Y, 
                pop_X = pop_X, 
                count_X = count_N,
-               control = list(tol_pred = 0.005))
+               control = list(tol_pred = 0.01))
 
 
 ## multinominal logit without constraints
@@ -162,8 +162,8 @@ turnout_naive <- mean(cces_nc$vv_turnout)
 
 ## estimates stratified on educ, age, and gender
 pop_tab <- acs_nc %>% 
-  count(educ, age, gender, cd, wt = N) %>%
-  mutate(weight = n / sum(n))
+  count(educ, age, gender, cd, wt = N, name = "N") %>%
+  mutate(weight = N / sum(N))
 
 turnout_nonpar <- pred_turnout(pop_tab)
 ```
@@ -173,14 +173,14 @@ For bmlogit:
 ```{r}
 popX_df <- acs_nc %>% 
   count(age, gender, cd, wt = N) %>% 
-  transmute(age, gender, cd, prop_X = n / sum(n))
+  transmute(age, gender, cd, prop_X = n / sum(n), N = n)
 
 # compute the joint table
 pr_joint <- predict(fit, newdata = pop_X)
 colnames(pr_joint) <- c("HS or Less", "Some College", "4-Year", "Post-Grad")
 
 pop_bmlogit <- bind_cols(popX_df, as_tibble(pr_joint)) %>%
-  pivot_longer(cols = -c(age, gender, cd, prop_X),
+  pivot_longer(cols = -c(age, gender, cd, prop_X, N),
                names_to = "educ", values_to = "pr") %>% 
   mutate(weight = prop_X * pr) # Pr(X) * Pr(Z | X)
 
@@ -195,7 +195,7 @@ pr_joint <- predict(fit_em, newdata = pop_X)
 colnames(pr_joint) <- c("HS or Less", "Some College", "4-Year", "Post-Grad")
 
 pop_emlogit <- bind_cols(popX_df, as_tibble(pr_joint)) %>%
-  pivot_longer(cols = -c(age, gender, cd, prop_X),
+  pivot_longer(cols = -c(age, gender, cd, prop_X, N),
                names_to = "educ", values_to = "pr") %>% 
   mutate(weight = prop_X * pr) # Pr(X) * Pr(Z | X)
 
@@ -256,5 +256,72 @@ knitr::kable(
   col.names = c("Estimator", "Estimate", "Error"),
   digits = 3
 )
+```
+
+## Small Area Application
+
+We can try these synthetic datasets on _small-area_ estimates as well, because we used cd as a covariate.
+
+```{r, warning=FALSE}
+
+est_bm <- synthArea(
+  vv_turnout ~ gender + educ + age | race + faminc + newsint + marstat,
+  data         = cces_nc,
+  pop_target   = pop_bmlogit,
+  area_var     = "cd",
+  popcount_var = "N", verbose = FALSE
+)
+
+est_em <- synthArea(
+  vv_turnout ~ gender + educ + age | race + faminc + newsint + marstat,
+  data         = cces_nc,
+  pop_target   = pop_emlogit,
+  area_var     = "cd",
+  popcount_var = "N", verbose = FALSE
+)
+
+# don't include education
+est_noeduc <- synthArea(
+  vv_turnout ~ gender + age | race + faminc + newsint + marstat,
+  data         = cces_nc,
+  pop_target   = acs_nc,
+  area_var     = "cd",
+  popcount_var = "N", verbose = FALSE
+)
+
+# include education with true joint
+est_educ <- synthArea(
+  vv_turnout ~ gender + age + educ | race + faminc + newsint + marstat,
+  data         = cces_nc,
+  pop_target   = acs_nc,
+  area_var     = "cd",
+  popcount_var = "N", verbose = FALSE
+)
+```
+
+
+```{r sae, dpi=450, fig.height=5, fig.width=5, echo = FALSE, warning = FALSE}
+
+par(mfrow = c(2, 2), pty = 's')
+
+i <- 1
+for (x in list(est_noeduc, est_educ, est_em, est_bm)) {
+  plot(NA,  NA,
+       xlab = "True Turnout", 
+       ylab = "synthArea Estimates",
+       main = c("No Education", "True Education", "Education with emlogit", "Education with bmlogit")[i],
+       xlim = c(0.54, 0.70),
+       ylim = c(0.54, 0.70),
+       bty = "n", 
+       type = "none",
+       cex.title = 0.75,
+       cex.axis = 0.75,
+       cex.lab = 0.75)
+  abline(0, 1, col = 'gray', lty = 2)  
+  points(estimands_nc$turnout_vap, x[["est"]],
+       pch = 16,
+       cex = 0.9)
+  i <- i + 1
+}
 ```
 
