@@ -25,6 +25,7 @@ devtools::install_github("soichiroy/bmlogit")
 library(bmlogit)
 library(emlogit)
 library(synthArea)
+
 library(tidyr)
 library(stringr)
 ```
@@ -52,8 +53,8 @@ acs_nc$rural <- urban_recode(acs_nc$cd)
 
 ``` r
 ## population data
-# target_Y <- acs_nc %>% count(educ, wt = N) %>% mutate(prop = n / sum(n)) %>% pull(prop)
-target_Y <- c(0.462, 0.258, 0.184, 0.096)
+target_Y <- acs_nc %>% count(educ, wt = N) %>% mutate(prop = n / sum(n)) %>% pull(prop)
+# target_Y <- c(0.462, 0.258, 0.184, 0.096)
 
 pop_X <- model.matrix(~age + gender + rural, data = acs_nc %>% count(age, gender, rural, wt = N))[,-1]
 count_N <- acs_nc %>% count(age, gender, rural, wt = N) %>% pull(n)
@@ -86,8 +87,8 @@ according to their known counts.
 
 |              | Target | bmlogit | emlogit |   Raw |
 |:-------------|-------:|--------:|--------:|------:|
-| HS or Less   |  0.462 |   0.460 |   0.297 | 0.294 |
-| Some College |  0.258 |   0.259 |   0.354 | 0.355 |
+| HS or Less   |  0.394 |   0.392 |   0.297 | 0.294 |
+| Some College |  0.327 |   0.327 |   0.354 | 0.355 |
 | 4-Year       |  0.184 |   0.186 |   0.230 | 0.231 |
 | Post-Grad    |  0.096 |   0.096 |   0.119 | 0.120 |
 
@@ -175,11 +176,16 @@ pop_emlogit <- bind_cols(popX_df, as_tibble(pr_joint)) %>%
 turnout_emlogit <- pred_turnout(pop_emlogit)
 ```
 
-And we finally compare all four. The true statewide turnout is 0.596.
+We can check how each synthetic estimator compares to the true cells.
+
+<img src="man/figures/README-joint-bmlogit-emlogit-1.png" width="100%" />
+
+And we finally compare the turnout estimates of the resulting
+post-stratification. The true statewide turnout is 0.596.
 
 | Estimator                  | Estimate |  Error |
 |:---------------------------|---------:|-------:|
 | Sample Mean                |    0.575 | -0.022 |
 | Post-str. w/ True Joint    |    0.562 | -0.034 |
-| Post-str. w/ bmlogit Joint |    0.555 | -0.041 |
+| Post-str. w/ bmlogit Joint |    0.562 | -0.034 |
 | Post-str. w/ emlogit Joint |    0.574 | -0.023 |

@@ -37,6 +37,7 @@ devtools::install_github("soichiroy/bmlogit")
 library(bmlogit)
 library(emlogit)
 library(synthArea)
+
 library(tidyr)
 library(stringr)
 ```
@@ -63,8 +64,8 @@ acs_nc$rural <- urban_recode(acs_nc$cd)
 
 ```{r example}
 ## population data
-# target_Y <- acs_nc %>% count(educ, wt = N) %>% mutate(prop = n / sum(n)) %>% pull(prop)
-target_Y <- c(0.462, 0.258, 0.184, 0.096)
+target_Y <- acs_nc %>% count(educ, wt = N) %>% mutate(prop = n / sum(n)) %>% pull(prop)
+# target_Y <- c(0.462, 0.258, 0.184, 0.096)
 
 pop_X <- model.matrix(~age + gender + rural, data = acs_nc %>% count(age, gender, rural, wt = N))[,-1]
 count_N <- acs_nc %>% count(age, gender, rural, wt = N) %>% pull(n)
@@ -98,8 +99,8 @@ for (i in 1:3) {
   plot(NA,  NA,
        xlab = "emlogit coef", ylab = "bmlogit coef",
        main = names(raw_educ)[i + 1],
-       xlim = c(-2, 2),
-       ylim = c(-2, 2),
+       xlim = c(-2.7, 2),
+       ylim = c(-2.7, 2),
        bty = "n", 
        type = "none")
   abline(0, 1, col = 'gray', lty = 2)  
@@ -202,7 +203,38 @@ pop_emlogit <- bind_cols(popX_df, as_tibble(pr_joint)) %>%
 turnout_emlogit <- pred_turnout(pop_emlogit)
 ```
 
-And we finally compare all four. The true statewide turnout is `r round(turnout, 3)`.
+
+We can check how each synthetic estimator compares to the true cells.
+
+```{r joint-bmlogit-emlogit, dpi=450, fig.height=3, fig.width=7, echo = FALSE, warning=FALSE}
+wt_df <- left_join(pop_emlogit, pop_bmlogit,
+          by = c("age", "rural", "gender", "educ"), suffix = c("_emlogit", "_bmlogit")) %>% 
+  select(-matches("prop_X_"), -matches("pr")) %>% 
+  left_join(pop_tab, by = c("age", "rural", "gender", "educ"))
+
+
+par(mfrow = c(1, 2), mar = c(4, 4, 2, 1), pty = 's')
+
+for (i in c("weight_emlogit", "weight_bmlogit")) {
+  plot(NA,  NA,
+       xlab = "ACS Joint Proportion", ylab = "Estimated Joint Proportion",
+       main = str_replace(i, "weight_", "Method: "),
+       xlim = c(0, 0.05),
+       ylim = c(0, 0.05),
+       bty = "n", 
+       las = 1,
+       type = "none",
+       cex.lab = 0.7,
+       cex.axis = 0.7
+       )
+  abline(0, 1, col = 'gray', lty = 2)  
+  points(wt_df$weight, wt_df[[i]],  pch = 16, cex = 0.5)
+}
+
+```
+
+
+And we finally compare the turnout estimates of the resulting post-stratification. The true statewide turnout is `r round(turnout, 3)`.
 
 ```{r, echo = FALSE}
 est <- c(turnout_naive, turnout_nonpar,
@@ -216,3 +248,4 @@ knitr::kable(
   digits = 3
 )
 ```
+
