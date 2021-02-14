@@ -4,7 +4,7 @@
 \alias{bmlogit}
 \title{Constrained Multinominal Logistic Regression}
 \usage{
-bmlogit(Y, X, target_Y, pop_X, count_N, control = list())
+bmlogit(Y, X, target_Y, pop_X, count_X, control = list())
 }
 \arguments{
 \item{Y}{A matrix of binary outcomes where each columns represents a level of the outcome}
