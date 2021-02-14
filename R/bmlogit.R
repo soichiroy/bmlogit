@@ -14,6 +14,37 @@
 #' @return The function returns a list of class \code{cmlogit} object.
 #' @import nloptr
 #' @export
+#'
+#' @examples
+#' library(dplyr)
+#'
+#' # Georgia CCES -- limit to voted
+#' vv_cces <- cces_GA %>%
+#'   filter(vv_turnout_gvm == "Voted") %>%
+#'   filter(voted_govR %in% c(0, 1))
+#'
+#' ## population data
+#' statewide <- colSums(elec18_GA[, -1])
+#' target_Y  <- statewide[c("abrams", "kemp")] /
+#'  sum(statewide[c("abrams", "kemp")])
+#' raceage_X    <- model.matrix(~ race_age - 1, data = catalist18_GA)
+#' raceage_N  <- catalist18_GA$count
+#'
+#'
+#' ## survey data
+#' Y1 <- model.matrix(~ voted_govR - 1, data = vv_cces)
+#' Y <- cbind(1 - Y1, Y1)
+#' X <- model.matrix(~ race_age, data = vv_cces)
+#'
+#' ## fit
+#' fit <- bmlogit(
+#'   Y = Y,
+#'   X = X,
+#'   target_Y = target_Y,
+#'   pop_X    = raceage_X,
+#'   count_X  = raceage_N,
+#'   control  = list(intercept = FALSE, tol_pred = 0.01))
+#'
 bmlogit <- function(Y, X, target_Y, pop_X, count_X, control = list()) {
 
   control <- input_check(control)
