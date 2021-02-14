@@ -11,6 +11,8 @@ Proportions
 of the same variable in \code{cc18_GA}}
 \item{prop_electorate}{Proportion of the turnout electorate, reported
 by Catalist (see Source link)}
+\item{count}{Estimated count of each cell. This is derived from \code{prop_electorate}
+multiplied by the total implied by \code{elec18_GA}.}
 }
 }
 \source{

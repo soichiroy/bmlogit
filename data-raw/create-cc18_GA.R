@@ -38,23 +38,6 @@ cc18_GA <- cc18_GA %>%
 usethis::use_data(cc18_GA, overwrite = TRUE)
 
 
-# electorate
-
-# https://medium.com/@CatalistAnalytics/what-happened-in-the-georgia-gubernatorial-election-32e06254c0ab
-cl_raw <- c(
-  "Non-White 18-29" = 0.06,
-  "Non-White 30-44" = 0.09,
-  "Non-White 45-64" = 0.14,
-  "Non-White 65+" = 0.06,
-  "White 18-29" = 0.07,
-  "White 30-44" = 0.12,
-  "White 45-64" = 0.25,
-  "White 65+" = 0.19)
-
-catalist18_GA <- enframe(cl_raw / sum(cl_raw),
-                         name = "race_age",
-                         value = "prop_electorate")
-usethis::use_data(catalist18_GA, overwrite = TRUE)
 
 
 # https://docs.google.com/spreadsheets/d/1GvP9C3x5398WMfDk2imGNJXu5eJIU5JYEzmvscmcMW4/edit#gid=48431491
@@ -77,3 +60,21 @@ elec18_GA <- tribble(
 )
 
 usethis::use_data(elec18_GA, overwrite = TRUE)
+
+# electorate
+# https://medium.com/@CatalistAnalytics/what-happened-in-the-georgia-gubernatorial-election-32e06254c0ab
+cl_raw <- c(
+  "Non-White 18-29" = 0.06,
+  "Non-White 30-44" = 0.09,
+  "Non-White 45-64" = 0.14,
+  "Non-White 65+" = 0.06,
+  "White 18-29" = 0.07,
+  "White 30-44" = 0.12,
+  "White 45-64" = 0.25,
+  "White 65+" = 0.19)
+
+catalist18_GA <- enframe(cl_raw / sum(cl_raw),
+                         name = "race_age",
+                         value = "prop_electorate") %>%
+  mutate(count = as.integer(prop_electorate*sum(elec18_GA$total)))
+usethis::use_data(catalist18_GA, overwrite = TRUE)

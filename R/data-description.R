@@ -44,5 +44,7 @@
 #'      of the same variable in `cc18_GA`}
 #'   \item{prop_electorate}{Proportion of the turnout electorate, reported
 #'     by Catalist (see Source link)}
+#'   \item{count}{Estimated count of each cell. This is derived from `prop_electorate`
+#'   multiplied by the total implied by `elec18_GA`.}
 #' }
 "catalist18_GA"
