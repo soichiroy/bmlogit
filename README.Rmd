@@ -54,7 +54,7 @@ Y <- model.matrix(~educ-1, data = cces_nc)
 X <- model.matrix(~age + gender, data = cces_nc)[,-1]
 
 ## fit
-fit <- bmlogit(Y = Y, X = X, target_Y = target_Y, pop_X = pop_X, count_N = count_N,
+fit <- bmlogit(Y = Y, X = X, target_Y = target_Y, pop_X = pop_X, count_X = count_N,
                control = list(tol_pred = 0.01))
 
 
@@ -93,7 +93,7 @@ for (i in 1:3) {
 
 ```{r}
 # estimate state-wide quantity
-data("districts_nc")
+data(districts_nc)
 data(estimands_nc)
 
 ## turnout in NC
@@ -117,7 +117,7 @@ pop_tab2 <- acs_nc %>% count(age, gender, wt = N) %>% mutate(prop = n / sum(n))
 
 # compute the joint table
 tmp  <- pop_tab2$prop
-prYX <- apply(pop_X %*% bbs, 1, function(x) exp(x) / sum(exp(x)))  
+prYX <- predict(fit)
 pr_joint <- data.frame(t(sapply(1:length(tmp), function(i) prYX[,i] * tmp[i])))
 colnames(pr_joint) <- c("HS or Less", "Some College", "4-Year", "Post-Grad")
 pop_tab2 <- bind_cols(pop_tab2, pr_joint) %>%
@@ -137,7 +137,7 @@ pop_tab3 <- acs_nc %>% count(age, gender, wt = N) %>%  mutate(prop = n / sum(n))
 
 # compute the joint table
 tmp  <- pop_tab3$prop
-prYX <- apply(pop_X %*% bb0, 1, function(x) exp(x) / sum(exp(x)))  
+prYX <- predict(fit2)  
 pr_joint <- data.frame(t(sapply(1:length(tmp), function(i) prYX[,i] * tmp[i])))
 colnames(pr_joint) <- c("HS or Less", "Some College", "4-Year", "Post-Grad")
 pop_tab3 <- bind_cols(pop_tab3, pr_joint) %>%
