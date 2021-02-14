@@ -1,13 +1,12 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# cmlogit
+# bmlogit
 
 <!-- badges: start -->
-
 <!-- badges: end -->
 
-The goal of `cmlogit` is to estimate the multinominal logistic
+The goal of `bmlogit` is to estimate the multinominal logistic
 regression with prediction constraints.
 
 ## Installation
@@ -17,14 +16,17 @@ You can install the development version from
 
 ``` r
 # install.packages("devtools")
-devtools::install_github("soichiroy/cmlogit")
+devtools::install_github("soichiroy/bmlogit")
 ```
 
-## Example
+## Implementation
 
 ``` r
-library(cmlogit)
+library(bmlogit)
+library(emlogit)
 library(synthArea)
+library(tidyr)
+library(stringr)
 ```
 
 ``` r
@@ -33,134 +35,128 @@ data(cces_nc)
 data(acs_nc)
 
 ## population data
-popY <- acs_nc %>% count(educ, wt = N) %>% mutate(prop = n / sum(n)) %>% pull(prop)
-popX <- model.matrix(~age + gender, data = acs_nc %>% count(age, gender, wt = N))
-popN <- acs_nc %>% count(age, gender, wt = N) %>% pull(n)
+target_Y <- acs_nc %>% count(educ, wt = N) %>% mutate(prop = n / sum(n)) %>% pull(prop)
+pop_X <- model.matrix(~age + gender, data = acs_nc %>% count(age, gender, wt = N))[,-1]
+count_N <- acs_nc %>% count(age, gender, wt = N) %>% pull(n)
 
 ## survey data
 Y <- model.matrix(~educ-1, data = cces_nc)
-X <- model.matrix(~age + gender, data = cces_nc)
+X <- model.matrix(~age + gender, data = cces_nc)[,-1]
 
 ## fit
-fit <- cmlogit(Y = Y, X = X, popY = popY, popX = popX, popN = popN,
-               control = list(intercept = FALSE, tol_pred = 0.01))
+fit <- bmlogit(Y = Y, X = X, 
+               target_Y = target_Y, 
+               pop_X = pop_X, 
+               count_X = count_N,
+               control = list(tol_pred = 0.005))
 
 
-## result
-bb0 <- cbind(0, matrix(fit$fit$x0, nrow = ncol(X)))
-bbs <- cbind(0, matrix(fit$fit$solution, nrow = ncol(X)))
-
-res <- cbind(popY,
-  apply(popX %*% bbs, 1, function(x) exp(x) / sum(exp(x))) %*% (popN / sum(popN)),
-  apply(popX %*% bb0, 1, function(x) exp(x) / sum(exp(x))) %*% (popN / sum(popN)),
-  colMeans(Y)
-)
-
-knitr::kable(res, col.names = c("population", "cmlogit", "emlogit", "raw prop."),
-             digits = 4)
+## multinominal logit without constraints
+fit_em <- emlogit(Y = Y, X = X)
 ```
 
-|                  | population | cmlogit | emlogit | raw prop. |
-| :--------------- | ---------: | ------: | ------: | --------: |
-| educHS or Less   |     0.3943 |  0.3893 |  0.2953 |    0.2941 |
-| educSome College |     0.3266 |  0.3266 |  0.3536 |    0.3552 |
-| educ4-Year       |     0.1835 |  0.1864 |  0.2310 |    0.2311 |
-| educPost-Grad    |     0.0956 |  0.0977 |  0.1201 |    0.1196 |
+There is a set multinomial coefficients for each level of the outcome
+(relative to baseline). Here there are six coefficients for each of
+those levels: 5 levels of age and 1 for gender.
 
-``` r
-## coefficients
-par(mfrow = c(1, 3), mar = c(4, 4, 2, 1), pty = 's')
-for (i in 1:3) {
-  plot(bb0[,i+1], bbs[,i+1], pch = 16,
-       xlab = "emlogit", ylab = "cmlogit",
-       main = rownames(res)[i+1])
-  abline(0, 1, col = 'gray', lty = 2)  
-}
-```
+<img src="man/figures/README-coef-bmlogit-emlogit-1.png" width="100%" />
 
-<img src="man/figures/README-unnamed-chunk-2-1.png" width="100%" />
+We can compare the resulting predicted values. Each prediction from the
+regression is made for each X covariate, and then summed with weights
+according to their known counts.
+
+|              | Target | bmlogit | emlogit |   Raw |
+|:-------------|-------:|--------:|--------:|------:|
+| HS or Less   |  0.394 |   0.392 |   0.295 | 0.294 |
+| Some College |  0.327 |   0.327 |   0.354 | 0.355 |
+| 4-Year       |  0.184 |   0.185 |   0.231 | 0.231 |
+| Post-Grad    |  0.096 |   0.096 |   0.120 | 0.120 |
 
 ## Application to Post-Stratification
 
+We now try to estimate turnout poststratifying on a synthetic
+distribution that was created by either emlogit, bmlogit, or simple
+weights.
+
+The prediction for a third variable, `Y` (turnout in this case) should
+go like this:
+
 ``` r
-# estimate state-wide quantity 
-data("districts_nc")
-data(estimands_nc)
-
-## turnout in NC 
-turnout <- sum(estimands_nc$totalvotes) / sum(estimands_nc$vap)
-
-## raw estimate without adjustment 
-turnout_naive <- mean(cces_nc$vv_turnout)
-
-## estimates stratified on educ, age, and gender 
-pop_tab <- acs_nc %>% count(educ, age, gender, wt = N) %>% 
-    mutate(weight = n / sum(n))
-nonpar <- cces_nc %>% group_by(educ, age, gender) %>% 
-  summarise(turnout = sum(vv_turnout) / n(), .groups = "drop") %>%
-  left_join(pop_tab, by = c("educ", "age", "gender")) %>% 
-  mutate(scale_weight = weight / sum(weight)) 
-turnout_nonpar <- nonpar$scale_weight %*% nonpar$turnout
-
-
-## cmlogit 
-pop_tab2 <- acs_nc %>% count(age, gender, wt = N) %>% mutate(prop = n / sum(n)) 
-
-# compute the joint table 
-tmp  <- pop_tab2$prop
-prYX <- apply(popX %*% bbs, 1, function(x) exp(x) / sum(exp(x)))  
-pr_joint <- data.frame(t(sapply(1:length(tmp), function(i) prYX[,i] * tmp[i])))
-colnames(pr_joint) <- c("HS or Less", "Some College", "4-Year", "Post-Grad")
-pop_tab2 <- bind_cols(pop_tab2, pr_joint) %>% 
-  select(-n, -prop) %>% 
-  tidyr::pivot_longer(cols = c(`HS or Less`, `Some College`, `4-Year`, `Post-Grad`), 
-                      names_to = "educ", values_to = "weights")
-
-# estimate with the estimated weigthts
-weight_cmlogit <- cces_nc %>% group_by(educ, age, gender) %>% 
-  summarise(turnout = sum(vv_turnout) / n(), .groups = "drop") %>%
-  left_join(pop_tab2, by = c("educ", "age", "gender")) %>% 
-  mutate(scale_weight = weights / sum(weights)) 
-turnout_cmlogit <- weight_cmlogit$scale_weight %*% weight_cmlogit$turnout
-
-## emlogit 
-pop_tab3 <- acs_nc %>% count(age, gender, wt = N) %>%  mutate(prop = n / sum(n)) 
-
-# compute the joint table 
-tmp  <- pop_tab3$prop
-prYX <- apply(popX %*% bb0, 1, function(x) exp(x) / sum(exp(x)))  
-pr_joint <- data.frame(t(sapply(1:length(tmp), function(i) prYX[,i] * tmp[i])))
-colnames(pr_joint) <- c("HS or Less", "Some College", "4-Year", "Post-Grad")
-pop_tab3 <- bind_cols(pop_tab3, pr_joint) %>% 
-  select(-n, -prop) %>% 
-  tidyr::pivot_longer(cols = c(`HS or Less`, `Some College`, `4-Year`, `Post-Grad`), 
-                      names_to = "educ", values_to = "weights")
-
-# estimate with the estimated weights
-weight_emlogit <- cces_nc %>% group_by(educ, age, gender) %>% 
-  summarise(turnout = sum(vv_turnout) / n(), .groups = "drop") %>%
-  left_join(pop_tab3, by = c("educ", "age", "gender")) %>% 
-  mutate(scale_weight = weights / sum(weights)) 
-turnout_emlogit <- weight_emlogit$scale_weight %*% weight_emlogit$turnout
-
-
-
-## results
-est <- c(turnout_naive, turnout_nonpar, 
-         turnout_cmlogit, turnout_emlogit)
-estimator  <- c("Sample Mean", "Post-str. w/ True Joint",
-                "Post-str. w/ cmlogit Joint",
-                "Post-str. w/ emlogit Joint")
-knitr::kable(
-  cbind(estimator, round(est, 3), round(turnout, 3)),
-  col.names = c("Estimator", "Estimate", "Truth"),
-  digits = 3
-)
+#' @param pop Population targets, with variables called `weight`
+pred_turnout <- function(pop, microdata = cces_nc, XZ = c("educ", "age", "gender")) {
+  
+  XZw <- microdata %>% 
+    group_by(!!!syms(XZ)) %>%
+    summarise(turnout = sum(vv_turnout) / n(), .groups = "drop") %>%
+    # join
+    left_join(pop, by = XZ) %>%
+    # rescale
+    mutate(weight = weight / sum(weight))
+  
+  # inner product
+  XZw$weight %*% XZw$turnout
+}
 ```
 
-| Estimator                  | Estimate | Truth |
-| :------------------------- | :------- | :---- |
-| Sample Mean                | 0.575    | 0.596 |
-| Post-str. w/ True Joint    | 0.56     | 0.596 |
-| Post-str. w/ cmlogit Joint | 0.559    | 0.596 |
-| Post-str. w/ emlogit Joint | 0.569    | 0.596 |
+We first do a simple weighted mean for the full joint (which we know in
+this case).
+
+``` r
+# estimate state-wide quantity
+data(districts_nc)
+data(estimands_nc)
+
+## turnout in NC
+turnout <- sum(estimands_nc$totalvotes) / sum(estimands_nc$vap)
+
+## raw estimate without adjustment
+turnout_naive <- mean(cces_nc$vv_turnout)
+
+## estimates stratified on educ, age, and gender
+pop_tab <- acs_nc %>% 
+  count(educ, age, gender, wt = N) %>%
+  mutate(weight = n / sum(n))
+
+turnout_nonpar <- pred_turnout(pop_tab)
+```
+
+For bmlogit:
+
+``` r
+popX_df <- count(acs_nc, age, gender, wt = N) %>% 
+  transmute(age, gender, prop_X = n / sum(n))
+
+# compute the joint table
+pr_joint <- predict(fit, newdata = pop_X)
+colnames(pr_joint) <- c("HS or Less", "Some College", "4-Year", "Post-Grad")
+
+pop_bmlogit <- bind_cols(popX_df, as_tibble(pr_joint)) %>%
+  pivot_longer(cols = -c(age, gender, prop_X),
+               names_to = "educ", values_to = "pr") %>% 
+  mutate(weight = prop_X * pr) # Pr(X) * Pr(Z | X)
+
+turnout_bmlogit <- pred_turnout(pop_bmlogit)
+```
+
+For emlogit
+
+``` r
+pr_joint <- predict(fit_em, newdata = pop_X)
+colnames(pr_joint) <- c("HS or Less", "Some College", "4-Year", "Post-Grad")
+
+pop_emlogit <- bind_cols(popX_df, as_tibble(pr_joint)) %>%
+  pivot_longer(cols = -c(age, gender, prop_X),
+               names_to = "educ", values_to = "pr") %>% 
+  mutate(weight = prop_X * pr) # Pr(X) * Pr(Z | X)
+
+turnout_emlogit <- pred_turnout(pop_emlogit)
+```
+
+And we finally compare all four. The true statewide turnout is 0.596.
+
+| Estimator                  | Estimate |  Error |
+|:---------------------------|---------:|-------:|
+| Sample Mean                |    0.575 | -0.022 |
+| Post-str. w/ True Joint    |    0.560 | -0.037 |
+| Post-str. w/ bmlogit Joint |    0.558 | -0.038 |
+| Post-str. w/ emlogit Joint |    0.569 | -0.027 |
