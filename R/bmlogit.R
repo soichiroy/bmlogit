@@ -14,7 +14,7 @@
 #' @return The function returns a list of class \code{cmlogit} object.
 #' @import nloptr
 #' @export
-cmlogit <- function(Y, X, target_Y, pop_X, count_N, control = list()) {
+bmlogit <- function(Y, X, target_Y, pop_X, count_N, control = list()) {
 
   control <- input_check(control)
 
@@ -58,10 +58,12 @@ cmlogit <- function(Y, X, target_Y, pop_X, count_N, control = list()) {
   prob <- predict_prob(X, coef_est)
 
   out <- list(coef = coef_est, fitted = prob, coef_init = coef_init, control = control)
-  class(out) <- c("cmlogit", "cmlogit.est")
+  class(out) <- c("bmlogit", "bmlogit.est")
   return(out)
 }
 
+# temporary dual use
+cmlogit <- bmlogit
 
 predict_prob <- function(X, coef) {
   Xb <- X %*% coef
