@@ -30,6 +30,7 @@ You can install the development version from [GitHub](https://github.com/) with:
 # install.packages("devtools")
 devtools::install_github("soichiroy/bmlogit")
 ```
+
 ## Implementation
 
 
@@ -42,7 +43,7 @@ library(tidyr)
 library(stringr)
 ```
 
-Let's use the synthArea but add another Census covariate -- urban/rural. We use the [citylab](https://github.com/theatlantic/citylab-data/blob/master/citylab-congress/citylab_cdi.csv) index to classify NC's 13 CDs into three categories
+We use the synthArea but we may use another Census covariate -- urban/rural. We use the [citylab](https://github.com/theatlantic/citylab-data/blob/master/citylab-congress/citylab_cdi.csv) index to classify NC's 13 CDs into three categories
 
 ```{r}
 ## load data
@@ -61,18 +62,19 @@ acs_nc$rural <- urban_recode(acs_nc$cd)
 
 ```
 
+We try to estimate the synthetic estimate of education using multinomial logit models.
 
 ```{r example}
 ## population data
 target_Y <- acs_nc %>% count(educ, wt = N) %>% mutate(prop = n / sum(n)) %>% pull(prop)
 # target_Y <- c(0.462, 0.258, 0.184, 0.096)
 
-pop_X <- model.matrix(~age + gender + rural, data = acs_nc %>% count(age, gender, rural, wt = N))[,-1]
-count_N <- acs_nc %>% count(age, gender, rural, wt = N) %>% pull(n)
+pop_X <- model.matrix(~ age + gender + cd, data = acs_nc %>% count(age, gender, cd, wt = N))[,-1]
+count_N <- acs_nc %>% count(age, gender, cd, wt = N) %>% pull(n)
 
 ## survey data
 Y <- model.matrix(~educ-1, data = cces_nc)
-X <- model.matrix(~age + gender + rural, data = cces_nc)[,-1]
+X <- model.matrix(~age + gender + cd, data = cces_nc)[,-1]
 
 ## fit
 fit <- bmlogit(Y = Y, X = X, 
@@ -87,7 +89,7 @@ fit_em <- emlogit(Y = Y, X = X)
 
 ```
 
-There is a set multinomial coefficients for each level of the outcome (relative to baseline). Here there are six coefficients for each of those levels: 5 levels of age, 1 for gender, and 3 for rurality.
+There is a set multinomial coefficients for each level of the outcome (relative to baseline). Here there are coefficients for each of those levels: 5 levels of age, 1 for gender, and 13 for rurality.
 
 ```{r coef-bmlogit-emlogit, dpi=450, fig.height=3.5, fig.width=7.5, echo = FALSE, warning = FALSE}
 
@@ -99,8 +101,8 @@ for (i in 1:3) {
   plot(NA,  NA,
        xlab = "emlogit coef", ylab = "bmlogit coef",
        main = names(raw_educ)[i + 1],
-       xlim = c(-2.7, 2),
-       ylim = c(-2.7, 2),
+       xlim = c(-2.4, 2),
+       ylim = c(-2.4, 2),
        bty = "n", 
        type = "none")
   abline(0, 1, col = 'gray', lty = 2)  
@@ -132,7 +134,7 @@ The prediction for a third variable, `Y` (turnout in this case) should go like t
 
 ```{r}
 #' @param pop Population targets, with variables called `weight`
-pred_turnout <- function(pop, microdata = cces_nc, XZ = c("educ", "age", "gender", "rural")) {
+pred_turnout <- function(pop, microdata = cces_nc, XZ = c("educ", "age", "gender", "cd")) {
   
   XZw <- microdata %>% 
     group_by(!!!syms(XZ)) %>%
@@ -163,7 +165,7 @@ turnout_naive <- mean(cces_nc$vv_turnout)
 
 ## estimates stratified on educ, age, and gender
 pop_tab <- acs_nc %>% 
-  count(educ, age, gender, rural, wt = N) %>%
+  count(educ, age, gender, cd, wt = N) %>%
   mutate(weight = n / sum(n))
 
 turnout_nonpar <- pred_turnout(pop_tab)
@@ -173,15 +175,15 @@ For bmlogit:
 
 ```{r}
 popX_df <- acs_nc %>% 
-  count(age, gender, rural, wt = N) %>% 
-  transmute(age, gender, rural, prop_X = n / sum(n))
+  count(age, gender, cd, wt = N) %>% 
+  transmute(age, gender, cd, prop_X = n / sum(n))
 
 # compute the joint table
 pr_joint <- predict(fit, newdata = pop_X)
 colnames(pr_joint) <- c("HS or Less", "Some College", "4-Year", "Post-Grad")
 
 pop_bmlogit <- bind_cols(popX_df, as_tibble(pr_joint)) %>%
-  pivot_longer(cols = -c(age, gender, rural, prop_X),
+  pivot_longer(cols = -c(age, gender, cd, prop_X),
                names_to = "educ", values_to = "pr") %>% 
   mutate(weight = prop_X * pr) # Pr(X) * Pr(Z | X)
 
@@ -196,7 +198,7 @@ pr_joint <- predict(fit_em, newdata = pop_X)
 colnames(pr_joint) <- c("HS or Less", "Some College", "4-Year", "Post-Grad")
 
 pop_emlogit <- bind_cols(popX_df, as_tibble(pr_joint)) %>%
-  pivot_longer(cols = -c(age, gender, rural, prop_X),
+  pivot_longer(cols = -c(age, gender, cd, prop_X),
                names_to = "educ", values_to = "pr") %>% 
   mutate(weight = prop_X * pr) # Pr(X) * Pr(Z | X)
 
@@ -204,13 +206,15 @@ turnout_emlogit <- pred_turnout(pop_emlogit)
 ```
 
 
+## Application Results
+
 We can check how each synthetic estimator compares to the true cells.
 
 ```{r joint-bmlogit-emlogit, dpi=450, fig.height=3, fig.width=7, echo = FALSE, warning=FALSE}
 wt_df <- left_join(pop_emlogit, pop_bmlogit,
-          by = c("age", "rural", "gender", "educ"), suffix = c("_emlogit", "_bmlogit")) %>% 
+          by = c("age", "cd", "gender", "educ"), suffix = c("_emlogit", "_bmlogit")) %>% 
   select(-matches("prop_X_"), -matches("pr")) %>% 
-  left_join(pop_tab, by = c("age", "rural", "gender", "educ"))
+  left_join(pop_tab, by = c("age", "cd", "gender", "educ"))
 
 
 par(mfrow = c(1, 2), mar = c(4, 4, 2, 1), pty = 's')
@@ -219,8 +223,8 @@ for (i in c("weight_emlogit", "weight_bmlogit")) {
   plot(NA,  NA,
        xlab = "ACS Joint Proportion", ylab = "Estimated Joint Proportion",
        main = str_replace(i, "weight_", "Method: "),
-       xlim = c(0, 0.05),
-       ylim = c(0, 0.05),
+       xlim = c(0, 0.01),
+       ylim = c(0, 0.01),
        bty = "n", 
        las = 1,
        type = "none",
@@ -228,7 +232,7 @@ for (i in c("weight_emlogit", "weight_bmlogit")) {
        cex.axis = 0.7
        )
   abline(0, 1, col = 'gray', lty = 2)  
-  points(wt_df$weight, wt_df[[i]],  pch = 16, cex = 0.5)
+  points(wt_df$weight, wt_df[[i]],  pch = 16, cex = 0.2)
 }
 
 ```

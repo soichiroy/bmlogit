@@ -30,8 +30,8 @@ library(tidyr)
 library(stringr)
 ```
 
-Let’s use the synthArea but add another Census covariate – urban/rural.
-We use the
+We use the synthArea but we may use another Census covariate –
+urban/rural. We use the
 [citylab](https://github.com/theatlantic/citylab-data/blob/master/citylab-congress/citylab_cdi.csv)
 index to classify NC’s 13 CDs into three categories
 
@@ -51,17 +51,20 @@ cces_nc$rural <- urban_recode(cces_nc$cd)
 acs_nc$rural <- urban_recode(acs_nc$cd)
 ```
 
+We try to estimate the synthetic estimate of education using multinomial
+logit models.
+
 ``` r
 ## population data
 target_Y <- acs_nc %>% count(educ, wt = N) %>% mutate(prop = n / sum(n)) %>% pull(prop)
 # target_Y <- c(0.462, 0.258, 0.184, 0.096)
 
-pop_X <- model.matrix(~age + gender + rural, data = acs_nc %>% count(age, gender, rural, wt = N))[,-1]
-count_N <- acs_nc %>% count(age, gender, rural, wt = N) %>% pull(n)
+pop_X <- model.matrix(~ age + gender + cd, data = acs_nc %>% count(age, gender, cd, wt = N))[,-1]
+count_N <- acs_nc %>% count(age, gender, cd, wt = N) %>% pull(n)
 
 ## survey data
 Y <- model.matrix(~educ-1, data = cces_nc)
-X <- model.matrix(~age + gender + rural, data = cces_nc)[,-1]
+X <- model.matrix(~age + gender + cd, data = cces_nc)[,-1]
 
 ## fit
 fit <- bmlogit(Y = Y, X = X, 
@@ -76,8 +79,8 @@ fit_em <- emlogit(Y = Y, X = X)
 ```
 
 There is a set multinomial coefficients for each level of the outcome
-(relative to baseline). Here there are six coefficients for each of
-those levels: 5 levels of age, 1 for gender, and 3 for rurality.
+(relative to baseline). Here there are coefficients for each of those
+levels: 5 levels of age, 1 for gender, and 13 for rurality.
 
 <img src="man/figures/README-coef-bmlogit-emlogit-1.png" width="100%" />
 
@@ -87,10 +90,10 @@ according to their known counts.
 
 |              | Target | bmlogit | emlogit |   Raw |
 |:-------------|-------:|--------:|--------:|------:|
-| HS or Less   |  0.394 |   0.392 |   0.297 | 0.294 |
+| HS or Less   |  0.394 |   0.392 |   0.298 | 0.294 |
 | Some College |  0.327 |   0.327 |   0.354 | 0.355 |
-| 4-Year       |  0.184 |   0.186 |   0.230 | 0.231 |
-| Post-Grad    |  0.096 |   0.096 |   0.119 | 0.120 |
+| 4-Year       |  0.184 |   0.184 |   0.230 | 0.231 |
+| Post-Grad    |  0.096 |   0.097 |   0.117 | 0.120 |
 
 We clearly see that bmlogit is closer to the target population, and
 emlogit defaults to the raw data.
@@ -106,7 +109,7 @@ go like this:
 
 ``` r
 #' @param pop Population targets, with variables called `weight`
-pred_turnout <- function(pop, microdata = cces_nc, XZ = c("educ", "age", "gender", "rural")) {
+pred_turnout <- function(pop, microdata = cces_nc, XZ = c("educ", "age", "gender", "cd")) {
   
   XZw <- microdata %>% 
     group_by(!!!syms(XZ)) %>%
@@ -137,7 +140,7 @@ turnout_naive <- mean(cces_nc$vv_turnout)
 
 ## estimates stratified on educ, age, and gender
 pop_tab <- acs_nc %>% 
-  count(educ, age, gender, rural, wt = N) %>%
+  count(educ, age, gender, cd, wt = N) %>%
   mutate(weight = n / sum(n))
 
 turnout_nonpar <- pred_turnout(pop_tab)
@@ -147,15 +150,15 @@ For bmlogit:
 
 ``` r
 popX_df <- acs_nc %>% 
-  count(age, gender, rural, wt = N) %>% 
-  transmute(age, gender, rural, prop_X = n / sum(n))
+  count(age, gender, cd, wt = N) %>% 
+  transmute(age, gender, cd, prop_X = n / sum(n))
 
 # compute the joint table
 pr_joint <- predict(fit, newdata = pop_X)
 colnames(pr_joint) <- c("HS or Less", "Some College", "4-Year", "Post-Grad")
 
 pop_bmlogit <- bind_cols(popX_df, as_tibble(pr_joint)) %>%
-  pivot_longer(cols = -c(age, gender, rural, prop_X),
+  pivot_longer(cols = -c(age, gender, cd, prop_X),
                names_to = "educ", values_to = "pr") %>% 
   mutate(weight = prop_X * pr) # Pr(X) * Pr(Z | X)
 
@@ -169,12 +172,14 @@ pr_joint <- predict(fit_em, newdata = pop_X)
 colnames(pr_joint) <- c("HS or Less", "Some College", "4-Year", "Post-Grad")
 
 pop_emlogit <- bind_cols(popX_df, as_tibble(pr_joint)) %>%
-  pivot_longer(cols = -c(age, gender, rural, prop_X),
+  pivot_longer(cols = -c(age, gender, cd, prop_X),
                names_to = "educ", values_to = "pr") %>% 
   mutate(weight = prop_X * pr) # Pr(X) * Pr(Z | X)
 
 turnout_emlogit <- pred_turnout(pop_emlogit)
 ```
+
+## Application Results
 
 We can check how each synthetic estimator compares to the true cells.
 
@@ -186,6 +191,6 @@ post-stratification. The true statewide turnout is 0.596.
 | Estimator                  | Estimate |  Error |
 |:---------------------------|---------:|-------:|
 | Sample Mean                |    0.575 | -0.022 |
-| Post-str. w/ True Joint    |    0.562 | -0.034 |
-| Post-str. w/ bmlogit Joint |    0.562 | -0.034 |
-| Post-str. w/ emlogit Joint |    0.574 | -0.023 |
+| Post-str. w/ True Joint    |    0.570 | -0.027 |
+| Post-str. w/ bmlogit Joint |    0.567 | -0.029 |
+| Post-str. w/ emlogit Joint |    0.579 | -0.017 |
