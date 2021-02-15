@@ -290,7 +290,7 @@ knitr::kable(
 
 We can also compare the performance of `bmlogit` by varying the value of the tolerance parameter.
 
-```{r echo=FALSE, dpi=450, fig.height=3, fig.width=7,}
+```{r echo=FALSE, dpi=450, fig.height=3.5, fig.width=7}
 par(mfrow = c(1, 2), mar = c(4, 4, 2, 1))
 plot(1:length(fit_seq), fit_seq, type = 'o', pch = 16, ylim = c(0.55, 0.6),
      xlab = "Value of Prediction Tolerance", 
@@ -307,7 +307,7 @@ plot(1:length(fit_seq), fit_seq - turnout, type = 'o', pch = 16, ylim = c(0.55, 
      xaxt = "n")
 axis(1, at = 1:length(fit_seq), labels = tol_vec)
 abline(h = turnout_emlogit - turnout, col = "gray", lty = 3)
-text(x = 2, y = turnout_emlogit, pos = 3, labels = "emlogit", col = 'gray50')
+text(x = 2, y = turnout_emlogit - turnout, pos = 3, labels = "emlogit", col = 'gray50')
 ```
 
 ## Small Area Application
