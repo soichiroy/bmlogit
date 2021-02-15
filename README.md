@@ -4,6 +4,7 @@
 # bmlogit
 
 <!-- badges: start -->
+
 <!-- badges: end -->
 
 The goal of `bmlogit` is to estimate the multinominal logistic
@@ -89,18 +90,18 @@ regression is made for each X covariate, and then summed with weights
 according to their known counts.
 
 |              | Target | bmlogit | emlogit |   Raw |
-|:-------------|-------:|--------:|--------:|------:|
+| :----------- | -----: | ------: | ------: | ----: |
 | HS or Less   |  0.394 |   0.389 |   0.298 | 0.294 |
 | Some College |  0.327 |   0.327 |   0.354 | 0.355 |
 | 4-Year       |  0.184 |   0.186 |   0.230 | 0.231 |
 | Post-Grad    |  0.096 |   0.098 |   0.117 | 0.120 |
 
-We clearly see that bmlogit is closer to the target population, and
-emlogit defaults to the raw data.
+We clearly see that `bmlogit` is closer to the target population, and
+`emlogit` defaults to the raw data.
 
 ## Application to Post-Stratification and Estimatig Turnout
 
-We now try to estimate turnout poststratifying on a synthetic
+We now try to estimate turnout post-stratifying on a synthetic
 distribution that was created by either emlogit, bmlogit, or simple
 weights.
 
@@ -150,6 +151,7 @@ popX_df <- acs_nc %>%
   count(age, gender, cd, wt = N) %>% 
   transmute(age, gender, cd, prop_X = n / sum(n), N = n)
 
+
 # compute the joint table
 pr_joint <- predict(fit, newdata = pop_X)
 colnames(pr_joint) <- c("HS or Less", "Some College", "4-Year", "Post-Grad")
@@ -191,12 +193,17 @@ turnout <- 4.77e6 / sum(estimands_nc$vap)
 And we finally compare the turnout estimates of the resulting
 post-stratification. The true statewide turnout is 0.608.
 
-| Estimator                  | Estimate |  Error |
-|:---------------------------|---------:|-------:|
-| Sample Mean                |    0.575 | -0.033 |
-| Post-str. w/ True Joint    |    0.570 | -0.038 |
-| Post-str. w/ bmlogit Joint |    0.567 | -0.041 |
-| Post-str. w/ emlogit Joint |    0.579 | -0.028 |
+| Estimator                  | Estimate |   Error |
+| :------------------------- | -------: | ------: |
+| Sample Mean                |    0.575 | \-0.033 |
+| Post-str. w/ True Joint    |    0.570 | \-0.038 |
+| Post-str. w/ bmlogit Joint |    0.567 | \-0.041 |
+| Post-str. w/ emlogit Joint |    0.579 | \-0.028 |
+
+We can also compare the performance of `bmlogit` by varying the value of
+the tolerance parameter.
+
+<img src="man/figures/README-unnamed-chunk-11-1.png" width="100%" />
 
 ## Small Area Application
 
@@ -204,6 +211,7 @@ We can try these synthetic datasets on *small-area* estimates as well,
 because we used cd as a covariate.
 
 ``` r
+
 est_bm <- synthArea(
   vv_turnout ~ gender + educ + age | race + faminc + newsint + marstat,
   data         = cces_nc,
