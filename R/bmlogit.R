@@ -47,21 +47,21 @@
 #'
 bmlogit <- function(Y, X, target_Y, pop_X, count_X, control = list()) {
 
+  ## set control options
   control <- input_check(control)
 
   ## obtain the initial value via emlogit (multinominal logit without constraints )
   init <- emlogit::emlogit(Y, X, control)
   init_coef <- init$coef[,-1]
 
+  ## add intercept term if necessary
   X <- as.matrix(X)
-  # control <- input_check(control)
   if (isTRUE(control$intercept)) {
     X <- cbind(1, X)
     pop_X <- cbind(1, pop_X)
   }
 
-
-  ## setting
+  ## setting nloptr options
   local_opts <- list("algorithm" = "NLOPT_LN_COBYLA",
                      "xtol_rel"  = 1.0e-8)
   opts <- list("algorithm" = "NLOPT_LN_AUGLAG", "xtol_rel" = 1.0e-8,
@@ -110,7 +110,6 @@ log_sum_exp <- function(x) {
 }
 
 
-
 #' Log-likelihood function
 #' @param x A vector of parameters
 #' @param Y A matrix of choice (n by J)
@@ -128,7 +127,7 @@ fn_ll <- function(x, dat_list) {
   Xb <- X %*% bmat
 
   ## log-likelihood
-  ll_vec <- rowSums(Y * Xb) - apply(Xb, 1, log_sum_exp)
+  ll_vec <- rowSums(Y * Xb) - apply(Xb, 1, log_sum_exp) # + sum(dnorm(x, mean = 0, sd = 5, log = TRUE))
   return(-sum(ll_vec))
 }
 
