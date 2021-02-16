@@ -1,6 +1,6 @@
 
 #' Obtain the predicted probability
-#' @param obj An output of \code{bmlogit()} funcion.
+#' @param obj An output of \code{bmlogit()} function.
 #' @param newdata A matrix of newdata. If not provided, the insample fit is returned.
 #' @param counts A vector of population counts corresponding to the rows of \code{newdata}.
 #'  If provided \code{predict} function returns the predicted outcome at the aggregate level.
