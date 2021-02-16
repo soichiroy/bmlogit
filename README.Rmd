@@ -299,7 +299,9 @@ plot(1:length(fit_seq), fit_seq, type = 'o', pch = 16, ylim = c(0.55, 0.6),
      xaxt = "n")
 axis(1, at = 1:length(fit_seq), labels = tol_vec)
 abline(h = turnout_emlogit, col = "gray", lty = 3)
+abline(h = turnout_nonpar, col = "gray50", lty = 3)
 text(x = 2, y = turnout_emlogit, pos = 3, labels = "emlogit", col = 'gray50')
+text(x = 3, y = turnout_nonpar, pos = 1, labels = "true joint", col = 'gray50')
 plot(1:length(fit_seq), fit_seq - turnout, type = 'o', pch = 16, ylim = c(0.55, 0.6) - turnout, 
      xlab = "Value of Prediction Tolerance", 
      ylab = "Predicted Turnout - Truth", 
@@ -307,7 +309,9 @@ plot(1:length(fit_seq), fit_seq - turnout, type = 'o', pch = 16, ylim = c(0.55, 
      xaxt = "n")
 axis(1, at = 1:length(fit_seq), labels = tol_vec)
 abline(h = turnout_emlogit - turnout, col = "gray", lty = 3)
+abline(h = turnout_nonpar - turnout, col = "gray50", lty = 3)
 text(x = 2, y = turnout_emlogit - turnout, pos = 3, labels = "emlogit", col = 'gray50')
+text(x = 3, y = turnout_nonpar  - turnout, pos = 1, labels = "true joint", col = 'gray50')
 ```
 
 ## Small Area Application
