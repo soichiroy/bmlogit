@@ -17,9 +17,10 @@ cc18_GA <- cc18 %>%
     race != 1 & age %in% 45:64 ~ "Non-White 45-64",
     race != 1 & age >= 65 ~ "Non-White 65+"
   )) %>%
+  mutate(female = as.integer(gender == 2)) %>%
   select(year, case_id, tookpost, weight, weight_post,
          st, cd, cd_post, county_fips, zipcode,
-         pid3, pid3_leaner, ideo5, gender:faminc,
+         pid3, pid3_leaner, ideo5, gender:faminc, female,
          race_age,
          voted_pres_party, intent_pres_party,
          voted_gov_party, intent_gov_party,
