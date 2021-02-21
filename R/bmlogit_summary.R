@@ -4,7 +4,7 @@
 #' @param newdata A matrix of newdata. If not provided, the insample fit is returned.
 #' @param counts A vector of population counts corresponding to the rows of \code{newdata}.
 #'  If provided \code{predict} function returns the predicted outcome at the aggregate level.
-#' @param counts A vector of population weights corresponding to the rows of \code{newdata}.
+#' @param weights A vector of population weights corresponding to the rows of \code{newdata}.
 #'  If provided \code{predict} function returns the predicted outcome at the aggregate level.
 #'  If \code{counts} is provided, this argument will be ignored.
 #' @return A matrix (or a vector) of predicted probabilities.

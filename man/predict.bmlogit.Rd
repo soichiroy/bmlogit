@@ -11,7 +11,10 @@
 
 \item{newdata}{A matrix of newdata. If not provided, the insample fit is returned.}
 
-\item{counts}{A vector of population weights corresponding to the rows of \code{newdata}.
+\item{counts}{A vector of population counts corresponding to the rows of \code{newdata}.
+If provided \code{predict} function returns the predicted outcome at the aggregate level.}
+
+\item{weights}{A vector of population weights corresponding to the rows of \code{newdata}.
 If provided \code{predict} function returns the predicted outcome at the aggregate level.
 If \code{counts} is provided, this argument will be ignored.}
 }
