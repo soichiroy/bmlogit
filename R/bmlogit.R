@@ -11,6 +11,7 @@
 #'  with `count_X`, this represents the traditional population table to post-stratify on.
 #' @param count_X A vector of population counts for each of   the possible combinations
 #'  of `X`.  Values must be ordered to be the same as the rows of `pop_X`.
+#' @inheritParams emlogit::emlogit
 #' @return The function returns a list of class \code{cmlogit} object.
 #' @import nloptr
 #' @export
