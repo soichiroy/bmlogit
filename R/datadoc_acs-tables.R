@@ -6,7 +6,7 @@
 #' three way table of gender, age, and education. That is, this is the
 #' output of `get_acs_cces(acscodes_age_sex_race)` and `get_acs_cces(acscodes_age_sex_educ)`.
 #'
-#' @rdname acs_NY
+#' @rdname acs_GA
 #' @source
 #' Kyle Walker and Matt Herman (2021). tidycensus: Load US Census Boundary and Attribute Data as
 #'  'tidyverse' and 'sf'-Ready Data Frames. R package version 0.11.4.
