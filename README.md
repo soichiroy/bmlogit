@@ -4,7 +4,6 @@
 # bmlogit
 
 <!-- badges: start -->
-
 <!-- badges: end -->
 
 The goal of `bmlogit` is to estimate the multinominal logistic
@@ -90,7 +89,7 @@ regression is made for each X covariate, and then summed with weights
 according to their known counts.
 
 |              | Target | bmlogit | emlogit |   Raw |
-| :----------- | -----: | ------: | ------: | ----: |
+|:-------------|-------:|--------:|--------:|------:|
 | HS or Less   |  0.394 |   0.389 |   0.298 | 0.294 |
 | Some College |  0.327 |   0.327 |   0.354 | 0.355 |
 | 4-Year       |  0.184 |   0.186 |   0.230 | 0.231 |
@@ -193,17 +192,17 @@ turnout <- 4.77e6 / sum(estimands_nc$vap)
 And we finally compare the turnout estimates of the resulting
 post-stratification. The true statewide turnout is 0.608.
 
-| Estimator                  | Estimate |   Error |
-| :------------------------- | -------: | ------: |
-| Sample Mean                |    0.575 | \-0.033 |
-| Post-str. w/ True Joint    |    0.570 | \-0.038 |
-| Post-str. w/ bmlogit Joint |    0.567 | \-0.041 |
-| Post-str. w/ emlogit Joint |    0.579 | \-0.028 |
+| Estimator                  | Estimate |  Error |
+|:---------------------------|---------:|-------:|
+| Sample Mean                |    0.575 | -0.033 |
+| Post-str. w/ True Joint    |    0.570 | -0.038 |
+| Post-str. w/ bmlogit Joint |    0.567 | -0.041 |
+| Post-str. w/ emlogit Joint |    0.579 | -0.028 |
 
 We can also compare the performance of `bmlogit` by varying the value of
 the tolerance parameter.
 
-<img src="man/figures/README-unnamed-chunk-11-1.png" width="100%" />
+<img src="man/figures/README-vary-tol-1.png" width="100%" />
 
 ## Small Area Application
 
@@ -211,7 +210,6 @@ We can try these synthetic datasets on *small-area* estimates as well,
 because we used cd as a covariate.
 
 ``` r
-
 est_bm <- synthArea(
   vv_turnout ~ gender + educ + age | race + faminc + newsint + marstat,
   data         = cces_nc,
