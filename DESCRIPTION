@@ -1,6 +1,6 @@
 Package: bmlogit
-Title: What the Package Does (One Line, Title Case)
-Version: 0.0.0.9000
+Title: Multinomial logit with balancing constraints
+Version: 0.0.1.9000
 Authors@R:
    c(person(given = "Soichiro",
            family = "Yamauchi",
@@ -13,8 +13,7 @@ Authors@R:
            email = "shirokuriwaki@gmail.com",
            comment = c(ORCID = "0000-0002-5687-2647")))
 Description: What the package does (one paragraph).
-License: `use_mit_license()`, `use_gpl3_license()` or friends to
-    pick a license
+License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)
@@ -22,3 +21,8 @@ RoxygenNote: 7.1.1
 Imports:
     nloptr,
     emlogit
+Suggests:
+    tibble,
+    dplyr
+Depends: 
+    R (>= 2.10)
