@@ -3,4 +3,6 @@
 ^\.Rproj\.user$
 
 ^data-raw$
+^data-macbookpro$
+^README_cache$
 ^LICENSE\.md$

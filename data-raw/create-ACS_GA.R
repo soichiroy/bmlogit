@@ -19,7 +19,6 @@ acs_race_GA <- raw_race_GA %>%
 
 use_data(acs_educ_GA, overwrite = TRUE)
 use_data(acs_race_GA, overwrite = TRUE)
-edu_tgt <- count(acs_educ_GA, cd, educ, wt = count, name = "count")
 
 
 # make groups consistent
