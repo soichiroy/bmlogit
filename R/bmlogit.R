@@ -85,7 +85,8 @@ bmlogit <- function(Y, X, target_Y, pop_X, count_X, control = list()) {
   ## predict
   prob <- predict_prob(X, coef_est)
 
-  out <- list(coef = coef_est, fitted = prob, coef_init = coef_init, control = control)
+  out <- list(coef = coef_est, fitted = prob, coef_init = coef_init, control = control,
+              y_name = colnames(Y))
   class(out) <- c("bmlogit", "bmlogit.est")
   return(out)
 }

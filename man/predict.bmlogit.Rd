@@ -7,7 +7,7 @@
 \method{predict}{bmlogit}(obj, newdata = NULL, counts = NULL, weights = NULL)
 }
 \arguments{
-\item{obj}{An output of \code{bmlogit()} funcion.}
+\item{obj}{An output of \code{bmlogit()} function.}
 
 \item{newdata}{A matrix of newdata. If not provided, the insample fit is returned.}
 
