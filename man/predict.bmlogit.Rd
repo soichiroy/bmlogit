@@ -4,10 +4,12 @@
 \alias{predict.bmlogit}
 \title{Obtain the predicted probability}
 \usage{
-\method{predict}{bmlogit}(obj, newdata = NULL, counts = NULL, weights = NULL)
+\method{predict}{bmlogit}(object, ..., newdata = NULL, counts = NULL, weights = NULL)
 }
 \arguments{
-\item{obj}{An output of \code{bmlogit()} function.}
+\item{object}{An output of \code{bmlogit()} function.}
+
+\item{...}{Unused parameter, added to be consistent with regular predict}
 
 \item{newdata}{A matrix of newdata. If not provided, the insample fit is returned.}
 
@@ -23,4 +25,39 @@ A matrix (or a vector) of predicted probabilities.
 }
 \description{
 Obtain the predicted probability
+}
+\examples{
+library(dplyr)
+## survey data
+Y <- model.matrix(~ educ - 1, data = cc18_GA)
+X <- model.matrix(~ age + female + race, data = cc18_GA)[, -1]
+
+## population table
+pop_X_df <-  count(acs_race_GA, age, female, race, wt = count, name = "count")
+pop_X    <- model.matrix(~ age + female + race, data = pop_X_df)[, -1]
+count_X  <- pull(pop_X_df, count)
+
+## population target
+edu_tgt  <- count(acs_educ_GA, educ, wt = count, name = "count") \%>\%
+  pull(count)
+
+## fit
+fit <- bmlogit(
+  Y = Y,
+  X = X,
+  pop_X    = pop_X,
+  count_X  = count_X,
+  target_Y = edu_tgt,
+  control  = list(intercept = FALSE, tol_pred = 0.05))
+
+pred <- predict(fit)
+dim(pred)
+head(pred)
+
+pred <- predict(fit, newdata = pop_X[1:3, ])
+bind_cols(pop_X_df[1:3, ],
+          pred)
+pred <- predict(fit, newdata = pop_X, counts = count_X)
+pred
+
 }
