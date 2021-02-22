@@ -72,8 +72,10 @@ predict.bmlogit <- function(object, ..., newdata = NULL, counts = NULL, weights 
 
 
 #' Coef function
+#' @param object bmlogit object
+#' @param ... Unnamed parameters currently unused but kept to avoid R CMD CHECK warnigns
 #' @export
-coef.bmlogit <- function(object) {
+coef.bmlogit <- function(object, ...) {
   # Names of the output levels
   if (is.null(object$y_name))
     colnames(object$coef) <- paste("`", 1:ncol(object$coef), "`", sep = "")

@@ -4,7 +4,12 @@
 \alias{coef.bmlogit}
 \title{Coef function}
 \usage{
-\method{coef}{bmlogit}(object)
+\method{coef}{bmlogit}(object, ...)
+}
+\arguments{
+\item{object}{bmlogit object}
+
+\item{...}{Unnamed parameters currently unused but kept to avoid R CMD CHECK warnigns}
 }
 \description{
 Coef function
