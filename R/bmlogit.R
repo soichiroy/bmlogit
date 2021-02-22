@@ -18,9 +18,11 @@
 #'
 #' @examples
 #' library(dplyr)
+#' library(tibble)
 #'
 #' ## survey data
 #' Y <- model.matrix(~ educ - 1, data = cc18_GA)
+#' colnames(Y) <- levels(cc18_GA$educ)
 #' X <- model.matrix(~ age + female + race, data = cc18_GA)[, -1]
 #'
 #' ## population table
@@ -30,7 +32,7 @@
 #'
 #' ## population target
 #' edu_tgt  <- count(acs_educ_GA, educ, wt = count, name = "count") %>%
-#'   pull(count)
+#'   deframe()
 #'
 #' ## fit
 #' fit <- bmlogit(
@@ -278,5 +280,10 @@ input_check <- function(Y, X, target_Y, pop_X, count_X, control) {
   assert_set_equal(NCOL(Y), length(target_Y))
   assert_set_equal(NCOL(X), NCOL(pop_X))
   assert_set_equal(NROW(pop_X), length(count_X))
+
+  # target levels agree
+  if (!is.null(colnames(Y)) & !is.null(names(target_Y))) {
+    assert_set_equal(colnames(Y), names(target_Y), ordered = TRUE)
+  }
 }
 

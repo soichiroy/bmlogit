@@ -28,8 +28,11 @@ Obtain the predicted probability
 }
 \examples{
 library(dplyr)
+library(tibble)
+
 ## survey data
 Y <- model.matrix(~ educ - 1, data = cc18_GA)
+colnames(Y) <- levels(cc18_GA$educ)
 X <- model.matrix(~ age + female + race, data = cc18_GA)[, -1]
 
 ## population table
@@ -39,7 +42,7 @@ count_X  <- pull(pop_X_df, count)
 
 ## population target
 edu_tgt  <- count(acs_educ_GA, educ, wt = count, name = "count") \%>\%
-  pull(count)
+  deframe()
 
 ## fit
 fit <- bmlogit(
