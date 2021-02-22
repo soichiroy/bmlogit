@@ -69,3 +69,26 @@ predict.bmlogit <- function(object, ..., newdata = NULL, counts = NULL, weights 
   }
   return(pred)
 }
+
+
+#' Coef function
+#' @export
+coef.bmlogit <- function(object) {
+  # Names of the output levels
+  if (is.null(object$y_name))
+    colnames(object$coef) <- paste("`", 1:ncol(object$coef), "`", sep = "")
+  else
+    colnames(object$coef) <- object$y_name
+
+  # Names of the covariates
+  if (is.null(object$x_name)) {
+    rownames(object$coef) <- 1:nrow(object$coef)
+  } else {
+    # x_name is collected after X <- cbind(1, X), so first is always intercept
+    # if no cbind(1, X) modifications were made, use the column names as is
+    if (isTRUE(object$control$intercept)) object$x_name[1] <- "intercept"
+    rownames(object$coef) <- object$x_name
+  }
+
+  return(object$coef)
+}

@@ -119,7 +119,7 @@ bmlogit_run <- function(Y, X, target_Y, pop_X, count_X, control) {
 
   ## coef
   coef  <- cbind(0, matrix(fit$solution, nrow = n_var, ncol = n_item - 1))
-
+  return(coef)
 }
 
 predict_prob <- function(X, coef) {
