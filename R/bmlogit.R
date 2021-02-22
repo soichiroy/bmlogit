@@ -3,7 +3,9 @@
 #' Constrained Multinominal Logistic Regression
 #'
 #' @param Y A matrix of binary outcomes where each columns represents a level of the outcome
-#' @param X A model matrix of covariates. An intercept must be included.
+#' @param X A model matrix of covariates. The recommended setup is to _not_ include
+#'  a intercept (and keep the `intercept = TRUE` default in controls), and
+#'  remove a baseline level in the categorical variables.
 #' @param target_Y A vector of proportions that the final probabilities should
 #'  align to (with tolerance set in the argument \code{tol_pred} in control). This should
 #'  have the same number of elements as the columns of `Y`.

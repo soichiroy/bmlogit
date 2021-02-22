@@ -9,7 +9,9 @@ input_check(Y, X, target_Y, pop_X, count_X, control)
 \arguments{
 \item{Y}{A matrix of binary outcomes where each columns represents a level of the outcome}
 
-\item{X}{A model matrix of covariates. An intercept must be included.}
+\item{X}{A model matrix of covariates. The recommended setup is to \emph{not} include
+a intercept (and keep the \code{intercept = TRUE} default in controls), and
+remove a baseline level in the categorical variables.}
 
 \item{target_Y}{A vector of proportions that the final probabilities should
 align to (with tolerance set in the argument \code{tol_pred} in control). This should
