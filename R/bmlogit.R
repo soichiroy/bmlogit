@@ -47,6 +47,9 @@ bmlogit <- function(Y, X, target_Y, pop_X, count_X, control = list()) {
   ## set control options
   control <- set_control_default(control)
 
+  # check input
+  input_check(Y, X, target_Y, pop_X, count_X, control)
+
   ## bmlogit_run
   coef_est <- bmlogit_run(Y, X, target_Y, pop_X, count_X, control)
 
@@ -251,3 +254,22 @@ set_control_default <- function(control) {
 
   return(control)
 }
+
+#' Check dimensions of inputs
+#' @inheritParams bmlogit
+#' @importFrom checkmate assert_matrix assert_vector assert_set_equal
+#' @keywords internal
+input_check <- function(Y, X, target_Y, pop_X, count_X, control) {
+  # Variable class ----
+  assert_matrix(Y)
+  assert_matrix(X)
+  assert_matrix(pop_X)
+  assert_vector(target_Y)
+  assert_vector(count_X)
+
+  # dimensions agree --
+  assert_set_equal(NCOL(Y), length(target_Y))
+  assert_set_equal(NCOL(X), NCOL(pop_X))
+  assert_set_equal(NROW(pop_X) + control$intercept, length(count_X))
+}
+
