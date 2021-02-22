@@ -72,7 +72,7 @@ fit <- bmlogit(
   pop_X    = pop_X,
   count_X  = count_X,
   target_Y = edu_tgt,
-  control  = list(intercept = FALSE, tol_pred = 0.05))
+  control  = list(tol_pred = 0.05))
 
 
 }

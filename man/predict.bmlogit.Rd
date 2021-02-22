@@ -48,15 +48,15 @@ fit <- bmlogit(
   pop_X    = pop_X,
   count_X  = count_X,
   target_Y = edu_tgt,
-  control  = list(intercept = FALSE, tol_pred = 0.05))
+  control  = list(tol_pred = 0.05))
 
 pred <- predict(fit)
 dim(pred)
 head(pred)
 
 pred <- predict(fit, newdata = pop_X[1:3, ])
-bind_cols(pop_X_df[1:3, ],
-          pred)
+cbind(pop_X_df[1:3, ], pred)
+
 pred <- predict(fit, newdata = pop_X, counts = count_X)
 pred
 
