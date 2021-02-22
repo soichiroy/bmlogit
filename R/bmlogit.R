@@ -45,7 +45,7 @@
 bmlogit <- function(Y, X, target_Y, pop_X, count_X, control = list()) {
 
   ## set control options
-  control <- input_check(control)
+  control <- set_control_default(control)
 
   ## bmlogit_run
   coef_est <- bmlogit_run(Y, X, target_Y, pop_X, count_X, control)
@@ -207,11 +207,11 @@ fn_ct <- function(x, dat_list) {
 
 
 
-#' Input check
+#' Set control default
 #' A function to set the default values of \code{control}.
 #' @param control A list of control parameters.
 #' @keywords internal
-input_check <- function(control) {
+set_control_default <- function(control) {
   if (!exists("max_iter", control)) {
     control$max_iter <- 200
   }
