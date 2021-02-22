@@ -54,6 +54,9 @@ bmlogit <- function(Y, X, target_Y, pop_X, count_X, control = list()) {
   coef_est <- bmlogit_run(Y, X, target_Y, pop_X, count_X, control)
 
   ## predict
+  # Add again (operation in bmlogit_run does not get carried over)
+  if (isTRUE(control$intercept))
+    X <- cbind(1, X)
   prob <- predict_prob(X, coef_est)
 
   out <- list(coef = coef_est,
@@ -270,6 +273,6 @@ input_check <- function(Y, X, target_Y, pop_X, count_X, control) {
   # dimensions agree --
   assert_set_equal(NCOL(Y), length(target_Y))
   assert_set_equal(NCOL(X), NCOL(pop_X))
-  assert_set_equal(NROW(pop_X) + control$intercept, length(count_X))
+  assert_set_equal(NROW(pop_X), length(count_X))
 }
 
