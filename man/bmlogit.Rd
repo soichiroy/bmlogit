@@ -9,7 +9,9 @@ bmlogit(Y, X, target_Y, pop_X, count_X, control = list())
 \arguments{
 \item{Y}{A matrix of binary outcomes where each columns represents a level of the outcome}
 
-\item{X}{A model matrix of covariates. An intercept must be included.}
+\item{X}{A model matrix of covariates. The recommended setup is to \emph{not} include
+a intercept (and keep the \code{intercept = TRUE} default in controls), and
+remove a baseline level in the categorical variables.}
 
 \item{target_Y}{A vector of proportions that the final probabilities should
 align to (with tolerance set in the argument \code{tol_pred} in control). This should
@@ -44,26 +46,29 @@ of \code{X}.  Values must be ordered to be the same as the rows of \code{pop_X}.
 }}
 }
 \value{
-The function returns a list of class \code{cmlogit} object.
+The function returns a list of class \code{bmlogit} object.
 }
 \description{
 Constrained Multinominal Logistic Regression
 }
 \examples{
 library(dplyr)
+library(tibble)
 
 ## survey data
 Y <- model.matrix(~ educ - 1, data = cc18_GA)
+colnames(Y) <- levels(cc18_GA$educ)
 X <- model.matrix(~ age + female + race, data = cc18_GA)[, -1]
 
 ## population table
-pop_X_df <-  count(acs_race_GA, age, female, race, wt = count, name = "count")
+pop_X_df <- count(acs_race_GA, age, female, race, wt = count, name = "count")
 pop_X    <- model.matrix(~ age + female + race, data = pop_X_df)[, -1]
 count_X  <- pull(pop_X_df, count)
 
 ## population target
 edu_tgt  <- count(acs_educ_GA, educ, wt = count, name = "count") \%>\%
-  pull(count)
+  transmute(educ, prop = count/sum(count)) \%>\%
+  deframe()
 
 ## fit
 fit <- bmlogit(
@@ -72,7 +77,7 @@ fit <- bmlogit(
   pop_X    = pop_X,
   count_X  = count_X,
   target_Y = edu_tgt,
-  control  = list(intercept = FALSE, tol_pred = 0.05))
+  control  = list(tol_pred = 0.05))
 
 
 }

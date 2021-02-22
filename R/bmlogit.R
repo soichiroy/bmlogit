@@ -3,7 +3,9 @@
 #' Constrained Multinominal Logistic Regression
 #'
 #' @param Y A matrix of binary outcomes where each columns represents a level of the outcome
-#' @param X A model matrix of covariates. An intercept must be included.
+#' @param X A model matrix of covariates. The recommended setup is to _not_ include
+#'  a intercept (and keep the `intercept = TRUE` default in controls), and
+#'  remove a baseline level in the categorical variables.
 #' @param target_Y A vector of proportions that the final probabilities should
 #'  align to (with tolerance set in the argument \code{tol_pred} in control). This should
 #'  have the same number of elements as the columns of `Y`.
@@ -12,25 +14,28 @@
 #' @param count_X A vector of population counts for each of   the possible combinations
 #'  of `X`.  Values must be ordered to be the same as the rows of `pop_X`.
 #' @inheritParams emlogit::emlogit
-#' @return The function returns a list of class \code{cmlogit} object.
-#' @import nloptr
+#' @return The function returns a list of class \code{bmlogit} object.
+#'
 #' @export
 #'
 #' @examples
 #' library(dplyr)
+#' library(tibble)
 #'
 #' ## survey data
 #' Y <- model.matrix(~ educ - 1, data = cc18_GA)
+#' colnames(Y) <- levels(cc18_GA$educ)
 #' X <- model.matrix(~ age + female + race, data = cc18_GA)[, -1]
 #'
 #' ## population table
-#' pop_X_df <-  count(acs_race_GA, age, female, race, wt = count, name = "count")
+#' pop_X_df <- count(acs_race_GA, age, female, race, wt = count, name = "count")
 #' pop_X    <- model.matrix(~ age + female + race, data = pop_X_df)[, -1]
 #' count_X  <- pull(pop_X_df, count)
 #'
 #' ## population target
 #' edu_tgt  <- count(acs_educ_GA, educ, wt = count, name = "count") %>%
-#'   pull(count)
+#'   transmute(educ, prop = count/sum(count)) %>%
+#'   deframe()
 #'
 #' ## fit
 #' fit <- bmlogit(
@@ -39,16 +44,46 @@
 #'   pop_X    = pop_X,
 #'   count_X  = count_X,
 #'   target_Y = edu_tgt,
-#'   control  = list(intercept = FALSE, tol_pred = 0.05))
+#'   control  = list(tol_pred = 0.05))
 #'
 #'
 bmlogit <- function(Y, X, target_Y, pop_X, count_X, control = list()) {
 
   ## set control options
-  control <- input_check(control)
+  control <- set_control_default(control)
 
+  # check input
+  input_check(Y, X, target_Y, pop_X, count_X, control)
+
+  ## bmlogit_run
+  coef_est <- bmlogit_run(Y, X, target_Y, pop_X, count_X, control)
+
+  ## predict
+  # Add again (operation in bmlogit_run does not get carried over)
+  if (isTRUE(control$intercept))
+    X <- cbind(1, X)
+  prob <- predict_prob(X, coef_est)
+
+  fit <- list(coef = coef_est,
+              fitted = prob,
+              control = control,
+              x_name = colnames(X),
+              y_name = colnames(Y))
+  class(fit) <- c("bmlogit", "bmlogit.est")
+  return(fit)
+}
+
+# temporary dual use
+cmlogit <- bmlogit
+
+
+#' Internal core function
+#' @import nloptr
+#' @importFrom emlogit emlogit
+#' @keywords internal
+bmlogit_run <- function(Y, X, target_Y, pop_X, count_X, control) {
   ## obtain the initial value via emlogit (multinominal logit without constraints )
-  init <- emlogit::emlogit(Y, X, control)
+  init <- emlogit(Y, X, control)
   init_coef <- init$coef[,-1]
 
   ## add intercept term if necessary
@@ -67,8 +102,16 @@ bmlogit <- function(Y, X, target_Y, pop_X, count_X, control = list()) {
   ## data
   n_item <- ncol(Y)
   n_var  <- ncol(X)
-  dat_list <- list(Y = Y, X = X, target_Y = target_Y, pop_X = pop_X, count_X = count_X,
-                   n_item = n_item, n_var = n_var, ep = control$tol_pred)
+  dat_list <- list(
+    Y = Y,
+    X = X,
+    target_Y = target_Y,
+    pop_X = pop_X,
+    count_X = count_X,
+    n_item = n_item,
+    n_var = n_var,
+    ep = control$tol_pred
+    )
 
   ## fit
   fit <- nloptr(
@@ -80,19 +123,9 @@ bmlogit <- function(Y, X, target_Y, pop_X, count_X, control = list()) {
   )
 
   ## coef
-  coef_est  <- cbind(0, matrix(fit$solution, nrow = n_var, ncol = n_item - 1))
-  coef_init <- init$coef
-  ## predict
-  prob <- predict_prob(X, coef_est)
-
-  out <- list(coef = coef_est, fitted = prob, coef_init = coef_init, control = control,
-              y_name = colnames(Y))
-  class(out) <- c("bmlogit", "bmlogit.est")
-  return(out)
+  coef  <- cbind(0, matrix(fit$solution, nrow = n_var, ncol = n_item - 1))
+  return(coef)
 }
-
-# temporary dual use
-cmlogit <- bmlogit
 
 predict_prob <- function(X, coef) {
   Xb <- X %*% coef
@@ -189,11 +222,11 @@ fn_ct <- function(x, dat_list) {
 
 
 
-#' Input check
+#' Set control default
 #' A function to set the default values of \code{control}.
 #' @param control A list of control parameters.
 #' @keywords internal
-input_check <- function(control) {
+set_control_default <- function(control) {
   if (!exists("max_iter", control)) {
     control$max_iter <- 200
   }
@@ -233,3 +266,30 @@ input_check <- function(control) {
 
   return(control)
 }
+
+#' Check dimensions of inputs
+#' @inheritParams bmlogit
+#' @importFrom checkmate assert_matrix assert_vector assert_set_equal
+#' @keywords internal
+input_check <- function(Y, X, target_Y, pop_X, count_X, control) {
+  # Variable class ----
+  assert_matrix(Y)
+  assert_matrix(X)
+  assert_matrix(pop_X)
+  assert_vector(target_Y)
+  assert_vector(count_X)
+
+  # dimensions agree --
+  assert_set_equal(NCOL(Y), length(target_Y))
+  assert_set_equal(NCOL(X), NCOL(pop_X))
+  assert_set_equal(NROW(pop_X), length(count_X))
+
+  ## target must sum  to 1 --
+  stopifnot(isTRUE(all.equal(sum(target_Y), 1)))
+
+  # target levels agree --
+  if (!is.null(colnames(Y)) & !is.null(names(target_Y))) {
+    assert_set_equal(colnames(Y), names(target_Y), ordered = TRUE)
+  }
+}
+
