@@ -13,7 +13,7 @@
 #'  of `X`.  Values must be ordered to be the same as the rows of `pop_X`.
 #' @inheritParams emlogit::emlogit
 #' @return The function returns a list of class \code{cmlogit} object.
-#' @import nloptr
+#'
 #' @export
 #'
 #' @examples
@@ -59,12 +59,13 @@ bmlogit <- function(Y, X, target_Y, pop_X, count_X, control = list()) {
     X <- cbind(1, X)
   prob <- predict_prob(X, coef_est)
 
-  out <- list(coef = coef_est,
+  fit <- list(coef = coef_est,
               fitted = prob,
               control = control,
+              x_name = colnames(X),
               y_name = colnames(Y))
-  class(out) <- c("bmlogit", "bmlogit.est")
-  return(out)
+  class(fit) <- c("bmlogit", "bmlogit.est")
+  return(fit)
 }
 
 # temporary dual use
@@ -72,10 +73,12 @@ cmlogit <- bmlogit
 
 
 #' Internal core function
+#' @import nloptr
+#' @importFrom emlogit emlogit
 #' @keywords internal
 bmlogit_run <- function(Y, X, target_Y, pop_X, count_X, control) {
   ## obtain the initial value via emlogit (multinominal logit without constraints )
-  init <- emlogit::emlogit(Y, X, control)
+  init <- emlogit(Y, X, control)
   init_coef <- init$coef[,-1]
 
   ## add intercept term if necessary
@@ -115,7 +118,8 @@ bmlogit_run <- function(Y, X, target_Y, pop_X, count_X, control) {
   )
 
   ## coef
-  coef_est  <- cbind(0, matrix(fit$solution, nrow = n_var, ncol = n_item - 1))
+  coef  <- cbind(0, matrix(fit$solution, nrow = n_var, ncol = n_item - 1))
+
 }
 
 predict_prob <- function(X, coef) {
