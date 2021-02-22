@@ -18,7 +18,7 @@
 #' X <- model.matrix(~ age + female + race, data = cc18_GA)[, -1]
 #'
 #' ## population table
-#' pop_X_df <-  count(acs_race_GA, age, female, race, wt = count, name = "count")
+#' pop_X_df <- count(acs_race_GA, age, female, race, wt = count, name = "count")
 #' pop_X    <- model.matrix(~ age + female + race, data = pop_X_df)[, -1]
 #' count_X  <- pull(pop_X_df, count)
 #'
