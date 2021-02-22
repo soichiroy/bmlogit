@@ -47,6 +47,27 @@ bmlogit <- function(Y, X, target_Y, pop_X, count_X, control = list()) {
   ## set control options
   control <- input_check(control)
 
+  ## bmlogit_run
+  coef_est <- bmlogit_run(Y, X, target_Y, pop_X, count_X, control)
+
+  ## predict
+  prob <- predict_prob(X, coef_est)
+
+  out <- list(coef = coef_est,
+              fitted = prob,
+              control = control,
+              y_name = colnames(Y))
+  class(out) <- c("bmlogit", "bmlogit.est")
+  return(out)
+}
+
+# temporary dual use
+cmlogit <- bmlogit
+
+
+#' Internal core function
+#' @keywords internal
+bmlogit_run <- function(Y, X, target_Y, pop_X, count_X, control) {
   ## obtain the initial value via emlogit (multinominal logit without constraints )
   init <- emlogit::emlogit(Y, X, control)
   init_coef <- init$coef[,-1]
@@ -67,8 +88,16 @@ bmlogit <- function(Y, X, target_Y, pop_X, count_X, control = list()) {
   ## data
   n_item <- ncol(Y)
   n_var  <- ncol(X)
-  dat_list <- list(Y = Y, X = X, target_Y = target_Y, pop_X = pop_X, count_X = count_X,
-                   n_item = n_item, n_var = n_var, ep = control$tol_pred)
+  dat_list <- list(
+    Y = Y,
+    X = X,
+    target_Y = target_Y,
+    pop_X = pop_X,
+    count_X = count_X,
+    n_item = n_item,
+    n_var = n_var,
+    ep = control$tol_pred
+    )
 
   ## fit
   fit <- nloptr(
@@ -81,18 +110,7 @@ bmlogit <- function(Y, X, target_Y, pop_X, count_X, control = list()) {
 
   ## coef
   coef_est  <- cbind(0, matrix(fit$solution, nrow = n_var, ncol = n_item - 1))
-  coef_init <- init$coef
-  ## predict
-  prob <- predict_prob(X, coef_est)
-
-  out <- list(coef = coef_est, fitted = prob, coef_init = coef_init, control = control,
-              y_name = colnames(Y))
-  class(out) <- c("bmlogit", "bmlogit.est")
-  return(out)
 }
-
-# temporary dual use
-cmlogit <- bmlogit
 
 predict_prob <- function(X, coef) {
   Xb <- X %*% coef
