@@ -67,6 +67,7 @@ count_X  <- pull(pop_X_df, count)
 
 ## population target
 edu_tgt  <- count(acs_educ_GA, educ, wt = count, name = "count") \%>\%
+  transmute(educ, prop = count/sum(count)) \%>\%
   deframe()
 
 ## fit

@@ -27,6 +27,7 @@
 #'
 #' ## population target
 #' edu_tgt  <- count(acs_educ_GA, educ, wt = count, name = "count") %>%
+#'   transmute(educ, prop = count/sum(count)) %>%
 #'   deframe()
 #'
 #' ## fit

@@ -34,6 +34,7 @@
 #'
 #' ## population target
 #' edu_tgt  <- count(acs_educ_GA, educ, wt = count, name = "count") %>%
+#'   transmute(educ, prop = count/sum(count)) %>%
 #'   deframe()
 #'
 #' ## fit
@@ -283,7 +284,10 @@ input_check <- function(Y, X, target_Y, pop_X, count_X, control) {
   assert_set_equal(NCOL(X), NCOL(pop_X))
   assert_set_equal(NROW(pop_X), length(count_X))
 
-  # target levels agree
+  ## target must sum  to 1 --
+  stopifnot(isTRUE(all.equal(sum(target_Y), 1)))
+
+  # target levels agree --
   if (!is.null(colnames(Y)) & !is.null(names(target_Y))) {
     assert_set_equal(colnames(Y), names(target_Y), ordered = TRUE)
   }
