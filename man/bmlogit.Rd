@@ -44,7 +44,7 @@ of \code{X}.  Values must be ordered to be the same as the rows of \code{pop_X}.
 }}
 }
 \value{
-The function returns a list of class \code{cmlogit} object.
+The function returns a list of class \code{bmlogit} object.
 }
 \description{
 Constrained Multinominal Logistic Regression
@@ -57,7 +57,7 @@ Y <- model.matrix(~ educ - 1, data = cc18_GA)
 X <- model.matrix(~ age + female + race, data = cc18_GA)[, -1]
 
 ## population table
-pop_X_df <-  count(acs_race_GA, age, female, race, wt = count, name = "count")
+pop_X_df <- count(acs_race_GA, age, female, race, wt = count, name = "count")
 pop_X    <- model.matrix(~ age + female + race, data = pop_X_df)[, -1]
 count_X  <- pull(pop_X_df, count)
 

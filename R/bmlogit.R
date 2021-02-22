@@ -12,7 +12,7 @@
 #' @param count_X A vector of population counts for each of   the possible combinations
 #'  of `X`.  Values must be ordered to be the same as the rows of `pop_X`.
 #' @inheritParams emlogit::emlogit
-#' @return The function returns a list of class \code{cmlogit} object.
+#' @return The function returns a list of class \code{bmlogit} object.
 #'
 #' @export
 #'
@@ -24,7 +24,7 @@
 #' X <- model.matrix(~ age + female + race, data = cc18_GA)[, -1]
 #'
 #' ## population table
-#' pop_X_df <-  count(acs_race_GA, age, female, race, wt = count, name = "count")
+#' pop_X_df <- count(acs_race_GA, age, female, race, wt = count, name = "count")
 #' pop_X    <- model.matrix(~ age + female + race, data = pop_X_df)[, -1]
 #' count_X  <- pull(pop_X_df, count)
 #'
