@@ -43,7 +43,7 @@ data(acs_nc)
 urban_recode <- function(cd) {
   case_when(
     cd %in% c("NC-03", "NC-07", "NC-08", "NC-11") ~ "Rural",
-    cd %in% c("NC-01", "NC-02", "NC-05", "NC-06", "NC-10", "NC-13") ~ "Rural-suburban", 
+    cd %in% c("NC-01", "NC-02", "NC-05", "NC-06", "NC-10", "NC-13") ~ "Rural-suburban",
     cd %in% c("NC-04", "NC-09", "NC-12") ~ "Sparse-suburban"
   )
 }
@@ -67,9 +67,9 @@ Y <- model.matrix(~educ-1, data = cces_nc)
 X <- model.matrix(~age + gender + cd, data = cces_nc)[,-1]
 
 ## fit
-fit <- bmlogit(Y = Y, X = X, 
-               target_Y = target_Y, 
-               pop_X = pop_X, 
+fit <- bmlogit(Y = Y, X = X,
+               target_Y = target_Y,
+               pop_X = pop_X,
                count_X = count_N,
                control = list(tol_pred = 0.01))
 
@@ -110,15 +110,15 @@ go like this:
 ``` r
 #' @param pop Population targets, with variables called `weight`
 pred_turnout <- function(pop, microdata = cces_nc, XZ = c("educ", "age", "gender", "cd")) {
-  
-  XZw <- microdata %>% 
+
+  XZw <- microdata %>%
     group_by(!!!syms(XZ)) %>%
     summarise(turnout = sum(vv_turnout) / n(), .groups = "drop") %>%
     # join
     left_join(pop, by = XZ) %>%
     # rescale
     mutate(weight = weight / sum(weight))
-  
+
   # inner product
   XZw$weight %*% XZw$turnout
 }
@@ -136,7 +136,7 @@ data(estimands_nc)
 turnout_naive <- mean(cces_nc$vv_turnout)
 
 ## estimates stratified on educ, age, and gender
-pop_tab <- acs_nc %>% 
+pop_tab <- acs_nc %>%
   count(educ, age, gender, cd, wt = N, name = "N") %>%
   mutate(weight = N / sum(N))
 
@@ -146,8 +146,8 @@ turnout_nonpar <- pred_turnout(pop_tab)
 For bmlogit:
 
 ``` r
-popX_df <- acs_nc %>% 
-  count(age, gender, cd, wt = N) %>% 
+popX_df <- acs_nc %>%
+  count(age, gender, cd, wt = N) %>%
   transmute(age, gender, cd, prop_X = n / sum(n), N = n)
 
 
@@ -157,7 +157,7 @@ colnames(pr_joint) <- c("HS or Less", "Some College", "4-Year", "Post-Grad")
 
 pop_bmlogit <- bind_cols(popX_df, as_tibble(pr_joint)) %>%
   pivot_longer(cols = -c(age, gender, cd, prop_X, N),
-               names_to = "educ", values_to = "pr") %>% 
+               names_to = "educ", values_to = "pr") %>%
   mutate(weight = prop_X * pr) # Pr(X) * Pr(Z | X)
 
 turnout_bmlogit <- pred_turnout(pop_bmlogit)
@@ -171,7 +171,7 @@ colnames(pr_joint) <- c("HS or Less", "Some College", "4-Year", "Post-Grad")
 
 pop_emlogit <- bind_cols(popX_df, as_tibble(pr_joint)) %>%
   pivot_longer(cols = -c(age, gender, cd, prop_X, N),
-               names_to = "educ", values_to = "pr") %>% 
+               names_to = "educ", values_to = "pr") %>%
   mutate(weight = prop_X * pr) # Pr(X) * Pr(Z | X)
 
 turnout_emlogit <- pred_turnout(pop_emlogit)

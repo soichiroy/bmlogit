@@ -53,7 +53,7 @@ data(acs_nc)
 urban_recode <- function(cd) {
   case_when(
     cd %in% c("NC-03", "NC-07", "NC-08", "NC-11") ~ "Rural",
-    cd %in% c("NC-01", "NC-02", "NC-05", "NC-06", "NC-10", "NC-13") ~ "Rural-suburban", 
+    cd %in% c("NC-01", "NC-02", "NC-05", "NC-06", "NC-10", "NC-13") ~ "Rural-suburban",
     cd %in% c("NC-04", "NC-09", "NC-12") ~ "Sparse-suburban"
   )
 }
@@ -77,9 +77,9 @@ Y <- model.matrix(~educ-1, data = cces_nc)
 X <- model.matrix(~age + gender + cd, data = cces_nc)[,-1]
 
 ## fit
-fit <- bmlogit(Y = Y, X = X, 
-               target_Y = target_Y, 
-               pop_X = pop_X, 
+fit <- bmlogit(Y = Y, X = X,
+               target_Y = target_Y,
+               pop_X = pop_X,
                count_X = count_N,
                control = list(tol_pred = 0.01))
 
@@ -103,14 +103,14 @@ for (i in 1:3) {
        main = names(raw_educ)[i + 1],
        xlim = c(-2.4, 2),
        ylim = c(-2.4, 2),
-       bty = "n", 
-       type = "none")
+       bty = "n",
+       type = "n")
   abline(0, 1, col = 'gray', lty = 2)  
   points(fit_em$coef[, i + 1], fit$coef[, i + 1],  pch = 16)
 }
 ```
 
-We can compare the resulting predicted values. Each prediction from the regression is made for each X covariate, and then summed with weights according to their known counts. 
+We can compare the resulting predicted values. Each prediction from the regression is made for each X covariate, and then summed with weights according to their known counts.
 
 
 ```{r, echo = FALSE}
@@ -135,15 +135,15 @@ The prediction for a third variable, `Y` (turnout in this case) should go like t
 ```{r}
 #' @param pop Population targets, with variables called `weight`
 pred_turnout <- function(pop, microdata = cces_nc, XZ = c("educ", "age", "gender", "cd")) {
-  
-  XZw <- microdata %>% 
+
+  XZw <- microdata %>%
     group_by(!!!syms(XZ)) %>%
     summarise(turnout = sum(vv_turnout) / n(), .groups = "drop") %>%
     # join
     left_join(pop, by = XZ) %>%
     # rescale
     mutate(weight = weight / sum(weight))
-  
+
   # inner product
   XZw$weight %*% XZw$turnout
 }
@@ -161,7 +161,7 @@ data(estimands_nc)
 turnout_naive <- mean(cces_nc$vv_turnout)
 
 ## estimates stratified on educ, age, and gender
-pop_tab <- acs_nc %>% 
+pop_tab <- acs_nc %>%
   count(educ, age, gender, cd, wt = N, name = "N") %>%
   mutate(weight = N / sum(N))
 
@@ -171,8 +171,8 @@ turnout_nonpar <- pred_turnout(pop_tab)
 For bmlogit:
 
 ```{r}
-popX_df <- acs_nc %>% 
-  count(age, gender, cd, wt = N) %>% 
+popX_df <- acs_nc %>%
+  count(age, gender, cd, wt = N) %>%
   transmute(age, gender, cd, prop_X = n / sum(n), N = n)
 
 
@@ -182,7 +182,7 @@ colnames(pr_joint) <- c("HS or Less", "Some College", "4-Year", "Post-Grad")
 
 pop_bmlogit <- bind_cols(popX_df, as_tibble(pr_joint)) %>%
   pivot_longer(cols = -c(age, gender, cd, prop_X, N),
-               names_to = "educ", values_to = "pr") %>% 
+               names_to = "educ", values_to = "pr") %>%
   mutate(weight = prop_X * pr) # Pr(X) * Pr(Z | X)
 
 turnout_bmlogit <- pred_turnout(pop_bmlogit)
@@ -194,12 +194,12 @@ turnout_bmlogit <- pred_turnout(pop_bmlogit)
 bmlogit_pre_turnout <- function(fit_bmlogit) {
   pr_joint <- predict(fit_bmlogit, newdata = pop_X)
   colnames(pr_joint) <- c("HS or Less", "Some College", "4-Year", "Post-Grad")
-  
+
   pop_bmlogit <- bind_cols(popX_df, as_tibble(pr_joint)) %>%
     pivot_longer(cols = -c(age, gender, cd, prop_X, N),
-                 names_to = "educ", values_to = "pr") %>% 
+                 names_to = "educ", values_to = "pr") %>%
     mutate(weight = prop_X * pr) # Pr(X) * Pr(Z | X)
-  
+
   turnout_bmlogit <- pred_turnout(pop_bmlogit)
   return(turnout_bmlogit)
 }
@@ -208,9 +208,9 @@ bmlogit_pre_turnout <- function(fit_bmlogit) {
 tol_vec <- c(0.01, 0.05, 0.1, 0.15, 0.2)
 fit_seq <- purrr::map_dbl(tol_vec, function(x) {
   ## fit
-  fit_tmp <- bmlogit(Y = Y, X = X, 
-                 target_Y = target_Y, 
-                 pop_X = pop_X, 
+  fit_tmp <- bmlogit(Y = Y, X = X,
+                 target_Y = target_Y,
+                 pop_X = pop_X,
                  count_X = count_N,
                  control = list(tol_pred = x))
   turnout_bmlogit <- bmlogit_pre_turnout(fit_tmp)
@@ -227,7 +227,7 @@ colnames(pr_joint) <- c("HS or Less", "Some College", "4-Year", "Post-Grad")
 
 pop_emlogit <- bind_cols(popX_df, as_tibble(pr_joint)) %>%
   pivot_longer(cols = -c(age, gender, cd, prop_X, N),
-               names_to = "educ", values_to = "pr") %>% 
+               names_to = "educ", values_to = "pr") %>%
   mutate(weight = prop_X * pr) # Pr(X) * Pr(Z | X)
 
 turnout_emlogit <- pred_turnout(pop_emlogit)
@@ -240,8 +240,8 @@ We can check how each synthetic estimator compares to the true cells.
 
 ```{r joint-bmlogit-emlogit, dpi=450, fig.height=3, fig.width=7, echo = FALSE, warning=FALSE}
 wt_df <- left_join(pop_emlogit, pop_bmlogit,
-          by = c("age", "cd", "gender", "educ"), suffix = c("_emlogit", "_bmlogit")) %>% 
-  select(-matches("prop_X_"), -matches("pr")) %>% 
+          by = c("age", "cd", "gender", "educ"), suffix = c("_emlogit", "_bmlogit")) %>%
+  select(-matches("prop_X_"), -matches("pr")) %>%
   left_join(pop_tab, by = c("age", "cd", "gender", "educ"))
 
 
@@ -253,7 +253,7 @@ for (i in c("weight_emlogit", "weight_bmlogit")) {
        main = str_replace(i, "weight_", "Method: "),
        xlim = c(0, 0.01),
        ylim = c(0, 0.01),
-       bty = "n", 
+       bty = "n",
        las = 1,
        type = "none",
        cex.lab = 0.7,
@@ -293,8 +293,8 @@ We can also compare the performance of `bmlogit` by varying the value of the tol
 ```{r vary-tol, echo=FALSE, dpi=450, fig.height=3.5, fig.width=7}
 par(mfrow = c(1, 2), mar = c(4, 4, 2, 1))
 plot(1:length(fit_seq), fit_seq, type = 'o', pch = 16, ylim = c(0.55, 0.6),
-     xlab = "Value of Prediction Tolerance", 
-     ylab = "Predicted Turnout", 
+     xlab = "Value of Prediction Tolerance",
+     ylab = "Predicted Turnout",
      main = "Predicted Turnout",
      xaxt = "n")
 axis(1, at = 1:length(fit_seq), labels = tol_vec)
@@ -302,9 +302,9 @@ abline(h = turnout_emlogit, col = "gray", lty = 3)
 abline(h = turnout_nonpar, col = "gray50", lty = 3)
 text(x = 2, y = turnout_emlogit, pos = 3, labels = "emlogit", col = 'gray50')
 text(x = 3, y = turnout_nonpar, pos = 1, labels = "true joint", col = 'gray50')
-plot(1:length(fit_seq), fit_seq - turnout, type = 'o', pch = 16, ylim = c(0.55, 0.6) - turnout, 
-     xlab = "Value of Prediction Tolerance", 
-     ylab = "Predicted Turnout - Truth", 
+plot(1:length(fit_seq), fit_seq - turnout, type = 'o', pch = 16, ylim = c(0.55, 0.6) - turnout,
+     xlab = "Value of Prediction Tolerance",
+     ylab = "Predicted Turnout - Truth",
      main = "Prediction Error",
      xaxt = "n")
 axis(1, at = 1:length(fit_seq), labels = tol_vec)
@@ -363,12 +363,12 @@ par(mfrow = c(2, 2), pty = 's')
 i <- 1
 for (x in list(est_noeduc, est_educ, est_em, est_bm)) {
   plot(NA,  NA,
-       xlab = "True Turnout", 
+       xlab = "True Turnout",
        ylab = "synthArea Estimates",
        main = c("No Education", "True Education", "Education with emlogit", "Education with bmlogit")[i],
        xlim = c(0.54, 0.70),
        ylim = c(0.54, 0.70),
-       bty = "n", 
+       bty = "n",
        type = "none",
        cex.title = 0.75,
        cex.axis = 0.75,
@@ -380,4 +380,3 @@ for (x in list(est_noeduc, est_educ, est_em, est_bm)) {
   i <- i + 1
 }
 ```
-

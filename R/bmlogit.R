@@ -60,8 +60,7 @@ bmlogit <- function(Y, X, target_Y, pop_X, count_X, control = list()) {
 
   ## predict
   # Add again (operation in bmlogit_run does not get carried over)
-  if (isTRUE(control$intercept))
-    X <- cbind(1, X)
+  if (isTRUE(control$intercept)) X <- cbind(1, X)
   prob <- predict_prob(X, coef_est)
 
   fit <- list(coef = coef_est,
@@ -93,6 +92,41 @@ bmlogit_run <- function(Y, X, target_Y, pop_X, count_X, control) {
     pop_X <- cbind(1, pop_X)
   }
 
+
+  ## estimate weights if necessary
+  J <- ncol(Y)-1
+  if (isTRUE(control$add_weights)) {
+    weight_x <- cbsw_survey(
+      x_survey = X,
+      x_target = apply(pop_X, 2, function(x) sum(x * count_X) / sum(count_X)),
+      n_pop    = sum(count_X),
+      add_intercept = FALSE
+    )
+
+    weight_xz <- cbsw_survey(
+      x_survey = cbind(X, Y[,-1]),
+      x_target = c(apply(pop_X, 2, function(x) sum(x * count_X) / sum(count_X)),
+                   target_Y[-1]),
+      n_pop    = sum(count_X),
+      add_intercept = FALSE
+    )
+
+    pr_x  <- as.vector(1 / (1 + exp(- X %*% weight_x$coef)))
+    J <- length(target_Y) - 1
+    Ydummy <- rbind(rep(0, J), diag(J))
+
+    weights <- matrix(NA, nrow = nrow(pop_X), ncol = J+1)
+    for (i in 1:nrow(pop_X)) {
+      for (j in 1:nrow(Ydummy)) {
+        tmp <- cbind(pop_X[i,, drop=FALSE], Ydummy[j,, drop=FALSE])
+        pr_XZ <- 1 / (1 + exp(-tmp %*% weight_xz$coef))
+        weights[i,j] <- pr_x[i] / pr_XZ
+      }
+    }
+  } else {
+    weights <- matrix(1, nrow = nrow(pop_X), ncol = length(target_Y))
+  }
+
   ## setting nloptr options
   local_opts <- list("algorithm" = "NLOPT_LN_COBYLA",
                      "xtol_rel"  = 1.0e-8)
@@ -103,15 +137,16 @@ bmlogit_run <- function(Y, X, target_Y, pop_X, count_X, control) {
   n_item <- ncol(Y)
   n_var  <- ncol(X)
   dat_list <- list(
-    Y = Y,
-    X = X,
+    Y        = Y,
+    X        = X,
     target_Y = target_Y,
-    pop_X = pop_X,
-    count_X = count_X,
-    n_item = n_item,
-    n_var = n_var,
-    ep = control$tol_pred
-    )
+    pop_X    = pop_X,
+    count_X  = count_X,
+    n_item   = n_item,
+    n_var    = n_var,
+    ep       = control$tol_pred,
+    weights  = weights
+  )
 
   ## fit
   fit <- nloptr(
@@ -158,7 +193,9 @@ fn_ll <- function(x, dat_list) {
   Xb <- X %*% bmat
 
   ## log-likelihood
-  ll_vec <- rowSums(Y * Xb) - apply(Xb, 1, log_sum_exp) # + sum(dnorm(x, mean = 0, sd = 5, log = TRUE))
+  # (prior) + sum(dnorm(x, mean = 0, sd = 5, log = TRUE))
+  ll_vec <- rowSums(Y * Xb) - apply(Xb, 1, log_sum_exp)
+
   return(-sum(ll_vec))
 }
 
@@ -188,10 +225,11 @@ fn_ct <- function(x, dat_list) {
 
   ## obtain data
   target_Y <- dat_list$target_Y
-  pop_X <- dat_list$pop_X
+  pop_X    <- dat_list$pop_X
   count_X <- dat_list$count_X
-  n_item <- dat_list$n_item
-  ep     <- dat_list$ep
+  n_item  <- dat_list$n_item
+  ep      <- dat_list$ep
+  weights <- dat_list$weights
 
   ##
   ## constraints:
@@ -202,17 +240,18 @@ fn_ct <- function(x, dat_list) {
   ##
   ## We replace the above hard constraints with
   ##
-  ## || Pr(Y = j) = E[exp(Xβ[j]) / sum(exp(Xβ[j']))] || <= ϵ
+  ## || Pr(Y = j) = E[w(X, Y) * exp(Xβ[j]) / sum(exp(Xβ[j']))] || <= ϵ
   ##
   ## where ϵ is set to a small constant
   ##
   bmat <- cbind(0, matrix(x, nrow = dat_list$n_var, ncol = n_item-1))
 
   ## Pr(Y = j | X) -- n by J
-  prYX  <- apply(pop_X %*% bmat, 1, function(x) exp(x) / sum(exp(x)))
+  prYX  <- t(apply(pop_X %*% bmat, 1, function(x) exp(x) / sum(exp(x))))
+  prYX  <- prYX * weights
 
   ## Pr(Y = j) = E[Pr(Y = j | X)]
-  prYj  <- as.vector(prYX %*% (count_X / sum(count_X)))
+  prYj  <- as.vector(t(prYX) %*% (count_X / sum(count_X)))
 
   ## compute the loss
   loss <- sum(abs(target_Y - prYj)) - ep
@@ -256,6 +295,11 @@ set_control_default <- function(control) {
     control$variance <- TRUE
   }
 
+  if (!exists("add_weights", control)) {
+    control$add_weights <- FALSE
+  }
+
+
   if (!exists("initialize", control)) {
     control$initialize <- "ls"
   } else {
@@ -292,4 +336,3 @@ input_check <- function(Y, X, target_Y, pop_X, count_X, control) {
     assert_set_equal(colnames(Y), names(target_Y), ordered = TRUE)
   }
 }
-
